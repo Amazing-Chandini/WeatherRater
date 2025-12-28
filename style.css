@@ -186,6 +186,333 @@ h2 {
     font-weight: bold;
 }
 
+/* User Profile Section */
+.user-profile-section {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.profile-input {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+#username-input {
+    padding: 12px 20px;
+    font-size: 1rem;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    min-width: 250px;
+    text-align: center;
+}
+
+#username-input:focus {
+    outline: none;
+    border-color: #764ba2;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+.save-btn {
+    padding: 12px 30px;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.save-btn:active {
+    transform: translateY(0);
+}
+
+/* Header with User Info */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #f0f0f0;
+    padding: 10px 20px;
+    border-radius: 25px;
+}
+
+#current-user {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.change-user-btn {
+    padding: 6px 15px;
+    font-size: 0.85rem;
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.change-user-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+h3 {
+    color: #555;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+/* Current Weather Display */
+.current-weather {
+    background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+}
+
+.weather-loading {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+.weather-data {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+}
+
+.weather-item {
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.weather-label {
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.weather-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+/* Detailed Ratings Section */
+.detailed-ratings-section {
+    margin: 25px 0;
+}
+
+.toggle-detailed-btn {
+    width: 100%;
+    padding: 15px 20px;
+    background: #f8f8f8;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #555;
+    transition: all 0.3s;
+}
+
+.toggle-detailed-btn:hover {
+    background: #f0f0f0;
+    border-color: #667eea;
+}
+
+.toggle-detailed-btn .arrow {
+    transition: transform 0.3s;
+}
+
+.toggle-detailed-btn.active .arrow {
+    transform: rotate(180deg);
+}
+
+.detailed-ratings {
+    background: #fafafa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 10px;
+    border: 1px solid #e0e0e0;
+}
+
+.detailed-rating-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+.detailed-rating-item:last-child {
+    margin-bottom: 0;
+}
+
+.detailed-rating-item label {
+    font-weight: 600;
+    color: #555;
+    min-width: 120px;
+}
+
+.rating-select {
+    flex: 1;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.rating-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Rating History Section */
+.history-section {
+    margin-top: 40px;
+    margin-bottom: 40px;
+}
+
+.rating-history {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.history-item {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.2s;
+}
+
+.history-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.history-rating {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.history-date {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.history-location {
+    color: #999;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+}
+
+.history-weather {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.history-weather-item {
+    background: #f8f8f8;
+    padding: 8px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.history-weather-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.history-weather-value {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-top: 3px;
+}
+
+.history-detailed {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.history-detailed-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+}
+
+.history-detailed-label {
+    color: #666;
+}
+
+.history-detailed-value {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.no-history {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: 2rem;
@@ -212,5 +539,28 @@ h2 {
     .stat-item {
         min-width: 120px;
         padding: 12px 20px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .user-info {
+        justify-content: center;
+    }
+
+    .detailed-rating-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .detailed-rating-item label {
+        min-width: auto;
+    }
+
+    .history-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

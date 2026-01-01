@@ -24,13 +24,13 @@
 // Your ratings will then sync across all devices!
 
 /*
-window.customFirebaseConfig = {
-    apiKey: "YOUR-API-KEY-HERE",
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef123456"
+const firebaseConfig = {
+  apiKey: "AIzaSyBPGDTVLfDyc6QFpWmXJdl_dUh97BUWCB0",
+  authDomain: "weatherrater-d9623.firebaseapp.com",
+  projectId: "weatherrater-d9623",
+  storageBucket: "weatherrater-d9623.firebasestorage.app",
+  messagingSenderId: "846363240490",
+  appId: "1:846363240490:web:9924824c64ab33daccfb53"
 };
 */
 

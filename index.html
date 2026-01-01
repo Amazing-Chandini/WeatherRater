@@ -154,6 +154,40 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase will be initialized in firebase-config.js
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // This will be replaced with your actual Firebase config
+        // For now, using a demo config - see firebase-config.js for setup
+        const firebaseConfig = {
+            apiKey: "DEMO-KEY",
+            authDomain: "weather-rater-demo.firebaseapp.com",
+            projectId: "weather-rater-demo",
+            storageBucket: "weather-rater-demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        // Check if a custom config exists
+        if (window.customFirebaseConfig) {
+            Object.assign(firebaseConfig, window.customFirebaseConfig);
+        }
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            window.db = getFirestore(app);
+            window.firebaseEnabled = true;
+        } catch (error) {
+            console.warn('Firebase not configured, using localStorage fallback');
+            window.firebaseEnabled = false;
+        }
+    </script>
+
+    <script src="firebase-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

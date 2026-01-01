@@ -1,22 +1,53 @@
-// Weather Rater App with User Profiles and Detailed Ratings
+// Weather Rater App with Cloud Storage (Firebase) and User Profiles
+
+// Import Firebase Firestore functions (available after Firebase script loads)
+let collection, addDoc, query, where, getDocs, onSnapshot, deleteDoc, doc;
+
+// Wait for Firebase to load
+setTimeout(async () => {
+    if (window.firebaseEnabled && window.db) {
+        const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        collection = firestoreModule.collection;
+        addDoc = firestoreModule.addDoc;
+        query = firestoreModule.query;
+        where = firestoreModule.where;
+        getDocs = firestoreModule.getDocs;
+        onSnapshot = firestoreModule.onSnapshot;
+        deleteDoc = firestoreModule.deleteDoc;
+        doc = firestoreModule.doc;
+    }
+}, 100);
+
 class WeatherRater {
     constructor() {
         this.currentUser = this.loadCurrentUser();
-        this.ratings = this.loadRatings();
+        this.ratings = [];
         this.map = null;
         this.markers = [];
         this.currentWeather = null;
         this.currentLocation = null;
+        this.useFirebase = false;
 
-        // Free weather API - OpenWeatherMap (no key required for basic usage)
-        // Note: For production, get a free API key at openweathermap.org
-        this.weatherAPIKey = 'demo'; // Using demo mode
-
-        this.init();
+        // Check Firebase availability
+        setTimeout(() => {
+            this.checkFirebaseStatus();
+            this.init();
+        }, 200);
     }
 
-    init() {
+    async checkFirebaseStatus() {
+        if (window.firebaseEnabled && window.db) {
+            this.useFirebase = true;
+            console.log('✅ Cloud storage enabled (Firebase)');
+        } else {
+            this.useFirebase = false;
+            console.log('⚠️ Using localStorage (not synced across devices)');
+        }
+    }
+
+    async init() {
         if (this.currentUser) {
+            await this.loadRatings();
             this.showMainApp();
         } else {
             this.showProfileSetup();
@@ -27,17 +58,17 @@ class WeatherRater {
         document.getElementById('user-profile-section').style.display = 'block';
         document.getElementById('main-app').style.display = 'none';
 
-        document.getElementById('save-username-btn').addEventListener('click', () => {
+        document.getElementById('save-username-btn').addEventListener('click', async () => {
             const username = document.getElementById('username-input').value.trim();
             if (username) {
                 this.setUser(username);
+                await this.loadRatings();
                 this.showMainApp();
             } else {
                 alert('Please enter your name');
             }
         });
 
-        // Allow Enter key to submit
         document.getElementById('username-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('save-username-btn').click();
@@ -48,7 +79,9 @@ class WeatherRater {
     showMainApp() {
         document.getElementById('user-profile-section').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
-        document.getElementById('current-user').textContent = `👤 ${this.currentUser}`;
+
+        const storageType = this.useFirebase ? '☁️ Cloud' : '💾 Local';
+        document.getElementById('current-user').textContent = `👤 ${this.currentUser} (${storageType})`;
 
         this.setupEventListeners();
         this.initMap();
@@ -56,10 +89,13 @@ class WeatherRater {
         this.displayRatingsOnMap();
         this.displayRatingHistory();
         this.getCurrentLocationAndWeather();
+
+        if (this.useFirebase) {
+            this.setupRealtimeSync();
+        }
     }
 
     setupEventListeners() {
-        // Overall rating buttons
         const buttons = document.querySelectorAll('.rating-btn');
         buttons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -67,7 +103,6 @@ class WeatherRater {
             });
         });
 
-        // Change user button
         document.getElementById('change-user-btn').addEventListener('click', () => {
             if (confirm('Switch to a different user? Your ratings are saved.')) {
                 this.currentUser = null;
@@ -76,7 +111,6 @@ class WeatherRater {
             }
         });
 
-        // Toggle detailed ratings
         document.getElementById('toggle-detailed-btn').addEventListener('click', () => {
             const detailedSection = document.getElementById('detailed-ratings');
             const toggleBtn = document.getElementById('toggle-detailed-btn');
@@ -98,6 +132,36 @@ class WeatherRater {
 
     loadCurrentUser() {
         return localStorage.getItem('currentUser');
+    }
+
+    async setupRealtimeSync() {
+        if (!this.useFirebase || !window.db) return;
+
+        try {
+            const q = query(
+                collection(window.db, 'ratings'),
+                where('user', '==', this.currentUser)
+            );
+
+            onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const newRating = { id: change.doc.id, ...change.doc.data() };
+                        const exists = this.ratings.find(r => r.id === newRating.id);
+                        if (!exists) {
+                            this.ratings.push(newRating);
+                            this.displayStats();
+                            this.displayRatingHistory();
+                            this.addMarkerToMap(newRating);
+                        }
+                    }
+                });
+            });
+
+            console.log('✅ Real-time sync enabled');
+        } catch (error) {
+            console.error('Real-time sync error:', error);
+        }
     }
 
     getCurrentLocationAndWeather() {
@@ -122,7 +186,6 @@ class WeatherRater {
 
     async fetchWeatherData(lat, lon) {
         try {
-            // Using Open-Meteo API (no key required, free)
             const response = await fetch(
                 `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,dew_point_2m&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`
             );
@@ -142,7 +205,6 @@ class WeatherRater {
             this.displayWeather();
         } catch (error) {
             console.error('Weather fetch error:', error);
-            // Use simulated data if API fails
             this.currentWeather = this.getSimulatedWeather();
             this.displayWeather();
         }
@@ -231,8 +293,7 @@ class WeatherRater {
         }
     }
 
-    saveRatingWithLocation(overallRating) {
-        // Get detailed ratings
+    async saveRatingWithLocation(overallRating) {
         const detailedRatings = {
             temperature: parseInt(document.getElementById('rating-temperature').value) || null,
             humidity: parseInt(document.getElementById('rating-humidity').value) || null,
@@ -250,7 +311,7 @@ class WeatherRater {
             timestamp: new Date().toISOString()
         };
 
-        this.saveRating(ratingData);
+        await this.saveRating(ratingData);
         this.showMessage(`Rating ${overallRating}/10 saved successfully!`, 'success');
         this.displayStats();
         this.displayRatingHistory();
@@ -277,14 +338,55 @@ class WeatherRater {
         }
     }
 
-    saveRating(ratingData) {
-        this.ratings.push(ratingData);
-        localStorage.setItem('weatherRatings', JSON.stringify(this.ratings));
+    async saveRating(ratingData) {
+        if (this.useFirebase && window.db) {
+            try {
+                const docRef = await addDoc(collection(window.db, 'ratings'), ratingData);
+                ratingData.id = docRef.id;
+                this.ratings.push(ratingData);
+                console.log('✅ Saved to cloud');
+            } catch (error) {
+                console.error('Firebase save error, falling back to localStorage:', error);
+                this.saveToLocalStorage(ratingData);
+            }
+        } else {
+            this.saveToLocalStorage(ratingData);
+        }
     }
 
-    loadRatings() {
+    saveToLocalStorage(ratingData) {
+        this.ratings.push(ratingData);
+        localStorage.setItem('weatherRatings', JSON.stringify(this.ratings));
+        console.log('💾 Saved to localStorage');
+    }
+
+    async loadRatings() {
+        if (this.useFirebase && window.db) {
+            try {
+                const q = query(
+                    collection(window.db, 'ratings'),
+                    where('user', '==', this.currentUser)
+                );
+                const querySnapshot = await getDocs(q);
+                this.ratings = [];
+                querySnapshot.forEach((doc) => {
+                    this.ratings.push({ id: doc.id, ...doc.data() });
+                });
+                console.log(`✅ Loaded ${this.ratings.length} ratings from cloud`);
+            } catch (error) {
+                console.error('Firebase load error, falling back to localStorage:', error);
+                this.loadFromLocalStorage();
+            }
+        } else {
+            this.loadFromLocalStorage();
+        }
+    }
+
+    loadFromLocalStorage() {
         const stored = localStorage.getItem('weatherRatings');
-        return stored ? JSON.parse(stored) : [];
+        const allRatings = stored ? JSON.parse(stored) : [];
+        this.ratings = allRatings.filter(r => r.user === this.currentUser);
+        console.log(`💾 Loaded ${this.ratings.length} ratings from localStorage`);
     }
 
     showMessage(text, type) {
@@ -299,17 +401,15 @@ class WeatherRater {
 
     displayRatingHistory() {
         const historyEl = document.getElementById('rating-history');
-        const userRatings = this.ratings.filter(r => r.user === this.currentUser);
 
-        if (userRatings.length === 0) {
+        if (this.ratings.length === 0) {
             historyEl.innerHTML = '<div class="no-history">No ratings yet. Click a number above to rate the weather!</div>';
             return;
         }
 
-        // Sort by most recent first
-        userRatings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const sortedRatings = [...this.ratings].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        historyEl.innerHTML = userRatings.map(rating => {
+        historyEl.innerHTML = sortedRatings.map(rating => {
             const date = new Date(rating.timestamp);
             const color = this.getRatingColor(rating.overallRating);
 
@@ -380,10 +480,9 @@ class WeatherRater {
             maxZoom: 18
         }).addTo(this.map);
 
-        const userRatings = this.ratings.filter(r => r.user === this.currentUser);
-        if (userRatings.length > 0) {
+        if (this.ratings.length > 0) {
             const bounds = L.latLngBounds(
-                userRatings.map(r => [r.latitude, r.longitude])
+                this.ratings.map(r => [r.latitude, r.longitude])
             );
             this.map.fitBounds(bounds, { padding: [50, 50] });
         }
@@ -393,8 +492,7 @@ class WeatherRater {
         this.markers.forEach(marker => marker.remove());
         this.markers = [];
 
-        const userRatings = this.ratings.filter(r => r.user === this.currentUser);
-        userRatings.forEach((ratingData) => {
+        this.ratings.forEach((ratingData) => {
             this.addMarkerToMap(ratingData);
         });
     }
@@ -469,12 +567,6 @@ class WeatherRater {
         `);
 
         this.markers.push(marker);
-
-        // If this is a new rating, zoom to it
-        if (this.markers.length === this.ratings.filter(r => r.user === this.currentUser).length) {
-            this.map.setView([latitude, longitude], 13);
-            marker.openPopup();
-        }
     }
 
     getRatingColor(rating) {
@@ -487,16 +579,15 @@ class WeatherRater {
 
     displayStats() {
         const statsEl = document.getElementById('stats');
-        const userRatings = this.ratings.filter(r => r.user === this.currentUser);
 
-        if (userRatings.length === 0) {
+        if (this.ratings.length === 0) {
             statsEl.innerHTML = '<p style="color: #999; font-style: italic;">No ratings yet. Click a number above to rate the weather!</p>';
             return;
         }
 
-        const totalRatings = userRatings.length;
-        const averageRating = (userRatings.reduce((sum, r) => sum + r.overallRating, 0) / totalRatings).toFixed(1);
-        const lastRating = userRatings[userRatings.length - 1];
+        const totalRatings = this.ratings.length;
+        const averageRating = (this.ratings.reduce((sum, r) => sum + r.overallRating, 0) / totalRatings).toFixed(1);
+        const lastRating = this.ratings[this.ratings.length - 1];
 
         statsEl.innerHTML = `
             <div class="stat-item">

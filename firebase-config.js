@@ -23,7 +23,7 @@
 //
 // Your ratings will then sync across all devices!
 
-/*
+
 const firebaseConfig = {
   apiKey: "AIzaSyBPGDTVLfDyc6QFpWmXJdl_dUh97BUWCB0",
   authDomain: "weatherrater-d9623.firebaseapp.com",
@@ -32,6 +32,5 @@ const firebaseConfig = {
   messagingSenderId: "846363240490",
   appId: "1:846363240490:web:9924824c64ab33daccfb53"
 };
-*/
 
 // OPTIONAL: For production, you can also set this in index.html before the Firebase script loads

@@ -63,13 +63,6 @@
 
             <!-- Tab Content: My Ratings -->
             <div id="my-ratings-tab" class="tab-content active">
-                <p class="subtitle">How would you rate today's weather?</p>
-
-                <!-- Current Weather Display -->
-                <div id="current-weather" class="current-weather">
-                    <div class="weather-loading">Fetching weather data...</div>
-                </div>
-
                 <!-- Overall Rating Section -->
                 <div class="rating-section">
                     <h3>Overall Weather Rating</h3>
@@ -90,6 +83,13 @@
                         <span class="label-left">Terrible</span>
                         <span class="label-right">Perfect</span>
                     </div>
+                </div>
+
+                <p class="subtitle">How would you rate today's weather?</p>
+
+                <!-- Current Weather Display -->
+                <div id="current-weather" class="current-weather">
+                    <div class="weather-loading">Fetching weather data...</div>
                 </div>
 
                 <!-- Detailed Ratings Dropdown -->
@@ -170,18 +170,18 @@
                     </div>
                 </div>
 
-                <!-- Rating History Section -->
-                <div class="history-section">
-                    <h2>Your Rating History</h2>
-                    <div id="rating-history" class="rating-history"></div>
-                </div>
-
                 <!-- Map Section -->
                 <div class="map-section">
                     <h2>Rating Map</h2>
                     <p class="map-subtitle">Your weather ratings across locations</p>
                     <div id="map"></div>
                     <div id="stats" class="stats"></div>
+                </div>
+
+                <!-- Rating History Section -->
+                <div class="history-section">
+                    <h2>Your Rating History</h2>
+                    <div id="rating-history" class="rating-history"></div>
                 </div>
             </div>
 

@@ -29,6 +29,38 @@ async function simpleHash(password) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Input sanitization to prevent XSS and invalid data
+function sanitizeInput(input, maxLength = 20) {
+    if (!input) return '';
+    return input
+        .trim()
+        .replace(/[<>'"]/g, '')  // Remove dangerous characters
+        .replace(/\s+/g, ' ')     // Normalize whitespace
+        .substring(0, maxLength); // Limit length
+}
+
+// Format Firebase error messages for users
+function getFriendlyErrorMessage(error) {
+    if (!error) return 'An unknown error occurred';
+
+    const errorCode = error.code || '';
+
+    if (errorCode.includes('permission-denied')) {
+        return 'Permission denied. Please check your connection and try again.';
+    }
+    if (errorCode.includes('unavailable')) {
+        return 'Service temporarily unavailable. Please try again in a moment.';
+    }
+    if (errorCode.includes('network')) {
+        return 'Network error. Please check your internet connection.';
+    }
+    if (errorCode.includes('unauthenticated')) {
+        return 'Authentication error. Please log in again.';
+    }
+
+    return 'An error occurred. Please try again.';
+}
+
 class WeatherRater {
     constructor() {
         this.currentUser = this.loadCurrentUser();
@@ -49,6 +81,10 @@ class WeatherRater {
         this.shareRatings = true;
         this.currentTab = 'my-ratings';
         this.isAuthenticated = false;
+
+        // Rate limiting
+        this.lastRatingTime = null;
+        this.recentFriendRequests = [];
 
         // Check Firebase availability
         setTimeout(() => {
@@ -119,11 +155,20 @@ class WeatherRater {
     }
 
     async signup() {
-        const username = document.getElementById('signup-username').value.trim();
+        const usernameInput = document.getElementById('signup-username').value;
         const password = document.getElementById('signup-password').value;
+        const btn = document.getElementById('signup-btn');
+
+        // Sanitize input
+        const username = sanitizeInput(usernameInput, 20);
 
         if (!username) {
-            alert('Please enter a username');
+            alert('Please enter a valid username (letters, numbers, and underscores only)');
+            return;
+        }
+
+        if (username.length < 3) {
+            alert('Username must be at least 3 characters');
             return;
         }
 
@@ -132,9 +177,13 @@ class WeatherRater {
             return;
         }
 
-        // Check if username already exists
-        if (this.useFirebase && window.db && collection) {
-            try {
+        // Loading state
+        btn.disabled = true;
+        btn.textContent = 'Creating Account...';
+
+        try {
+            // Check if username already exists
+            if (this.useFirebase && window.db && collection) {
                 const userQuery = query(collection(window.db, 'users'), where('username', '==', username));
                 const userDocs = await getDocs(userQuery);
 
@@ -157,48 +206,59 @@ class WeatherRater {
                 this.showMessage('Account created successfully!', 'success');
                 await this.loadRatings();
                 this.showMainApp();
-            } catch (error) {
-                console.error('Signup error:', error);
-                alert('Error creating account. Please try again.');
-            }
-        } else {
-            // localStorage fallback
-            const users = JSON.parse(localStorage.getItem('users') || '{}');
-            if (users[username]) {
-                alert('Username already exists. Please choose another.');
-                return;
-            }
+            } else {
+                // localStorage fallback
+                const users = JSON.parse(localStorage.getItem('users') || '{}');
+                if (users[username]) {
+                    alert('Username already exists. Please choose another.');
+                    return;
+                }
 
-            const passwordHash = await simpleHash(password);
-            users[username] = {
-                passwordHash: passwordHash,
-                createdAt: new Date().toISOString()
-            };
-            localStorage.setItem('users', JSON.stringify(users));
+                const passwordHash = await simpleHash(password);
+                users[username] = {
+                    passwordHash: passwordHash,
+                    createdAt: new Date().toISOString()
+                };
+                localStorage.setItem('users', JSON.stringify(users));
 
-            this.setUserSession(username);
-            this.showMessage('Account created successfully!', 'success');
-            await this.loadRatings();
-            this.showMainApp();
+                this.setUserSession(username);
+                this.showMessage('Account created successfully!', 'success');
+                await this.loadRatings();
+                this.showMainApp();
+            }
+        } catch (error) {
+            console.error('Signup error:', error);
+            alert(getFriendlyErrorMessage(error));
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
         }
     }
 
     async login() {
-        const username = document.getElementById('login-username').value.trim();
+        const usernameInput = document.getElementById('login-username').value;
         const password = document.getElementById('login-password').value;
+        const btn = document.getElementById('login-btn');
+
+        // Sanitize input
+        const username = sanitizeInput(usernameInput, 20);
 
         if (!username || !password) {
             alert('Please enter both username and password');
             return;
         }
 
-        if (this.useFirebase && window.db && collection) {
-            try {
+        // Loading state
+        btn.disabled = true;
+        btn.textContent = 'Logging In...';
+
+        try {
+            if (this.useFirebase && window.db && collection) {
                 const userQuery = query(collection(window.db, 'users'), where('username', '==', username));
                 const userDocs = await getDocs(userQuery);
 
                 if (userDocs.empty) {
-                    alert('User not found. Please sign up first.');
+                    alert('User not found. Please check your username or sign up.');
                     return;
                 }
 
@@ -206,7 +266,7 @@ class WeatherRater {
                 const passwordHash = await simpleHash(password);
 
                 if (userData.passwordHash !== passwordHash) {
-                    alert('Incorrect password');
+                    alert('Incorrect password. Please try again.');
                     return;
                 }
 
@@ -217,28 +277,31 @@ class WeatherRater {
                 await this.loadFriends();
                 await this.loadFriendRequests();
                 this.showMainApp();
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('Error logging in. Please try again.');
-            }
-        } else {
-            // localStorage fallback
-            const users = JSON.parse(localStorage.getItem('users') || '{}');
-            if (!users[username]) {
-                alert('User not found. Please sign up first.');
-                return;
-            }
+            } else {
+                // localStorage fallback
+                const users = JSON.parse(localStorage.getItem('users') || '{}');
+                if (!users[username]) {
+                    alert('User not found. Please check your username or sign up.');
+                    return;
+                }
 
-            const passwordHash = await simpleHash(password);
-            if (users[username].passwordHash !== passwordHash) {
-                alert('Incorrect password');
-                return;
-            }
+                const passwordHash = await simpleHash(password);
+                if (users[username].passwordHash !== passwordHash) {
+                    alert('Incorrect password. Please try again.');
+                    return;
+                }
 
-            this.setUserSession(username);
-            this.showMessage('Welcome back!', 'success');
-            await this.loadRatings();
-            this.showMainApp();
+                this.setUserSession(username);
+                this.showMessage('Welcome back!', 'success');
+                await this.loadRatings();
+                this.showMainApp();
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert(getFriendlyErrorMessage(error));
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Log In';
         }
     }
 
@@ -481,6 +544,16 @@ class WeatherRater {
     }
 
     handleRating(overallRating) {
+        // Rate limiting: 1 rating per 5 minutes
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+
+        if (this.lastRatingTime && (now - this.lastRatingTime) < fiveMinutes) {
+            const timeLeft = Math.ceil((fiveMinutes - (now - this.lastRatingTime)) / 60000);
+            this.showMessage(`Please wait ${timeLeft} more minute${timeLeft > 1 ? 's' : ''} before rating again`, 'info');
+            return;
+        }
+
         if (!this.currentLocation) {
             this.showMessage('Getting your location...', 'info');
 
@@ -520,6 +593,10 @@ class WeatherRater {
         };
 
         await this.saveRating(ratingData);
+
+        // Update rate limiting timestamp
+        this.lastRatingTime = Date.now();
+
         this.showMessage(`Rating ${overallRating}/10 saved successfully!`, 'success');
         this.displayStats();
         this.displayRatingHistory();
@@ -853,10 +930,13 @@ class WeatherRater {
     }
 
     async addFriend() {
-        const friendUsername = document.getElementById('friend-username').value.trim();
+        const friendUsernameInput = document.getElementById('friend-username').value;
+
+        // Sanitize input
+        const friendUsername = sanitizeInput(friendUsernameInput, 20);
 
         if (!friendUsername) {
-            this.showMessage('Please enter a username', 'error');
+            this.showMessage('Please enter a valid username', 'error');
             return;
         }
 
@@ -881,14 +961,35 @@ class WeatherRater {
     }
 
     async sendFriendRequest(toUsername) {
-        // Check if user exists
-        if (this.useFirebase && window.db) {
-            try {
+        // Rate limiting: 10 requests per 5 minutes
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+
+        // Clean up old requests from tracking array
+        this.recentFriendRequests = this.recentFriendRequests.filter(
+            timestamp => (now - timestamp) < fiveMinutes
+        );
+
+        if (this.recentFriendRequests.length >= 10) {
+            this.showMessage('Too many friend requests. Please wait a few minutes before sending more.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('add-friend-btn');
+        const originalText = btn.textContent;
+
+        // Loading state
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        try {
+            // Check if user exists
+            if (this.useFirebase && window.db) {
                 const userQuery = query(collection(window.db, 'users'), where('username', '==', toUsername));
                 const userDocs = await getDocs(userQuery);
 
                 if (userDocs.empty) {
-                    this.showMessage('User not found', 'error');
+                    this.showMessage('User not found. Please check the username.', 'error');
                     return;
                 }
 
@@ -900,26 +1001,36 @@ class WeatherRater {
                     timestamp: new Date().toISOString()
                 });
 
+                // Track request for rate limiting
+                this.recentFriendRequests.push(now);
+
                 document.getElementById('friend-username').value = '';
                 await this.loadFriendRequests();
                 this.showMessage(`Friend request sent to ${toUsername}!`, 'success');
-            } catch (error) {
-                console.error('Error sending friend request:', error);
-                this.showMessage('Error sending friend request', 'error');
+            } else {
+                // localStorage fallback
+                const requests = JSON.parse(localStorage.getItem('friendRequests') || '[]');
+                requests.push({
+                    from: this.currentUser,
+                    to: toUsername,
+                    status: 'pending',
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('friendRequests', JSON.stringify(requests));
+
+                // Track request for rate limiting
+                this.recentFriendRequests.push(now);
+
+                document.getElementById('friend-username').value = '';
+                await this.loadFriendRequests();
+                this.showMessage(`Friend request sent to ${toUsername}!`, 'success');
             }
-        } else {
-            // localStorage fallback
-            const requests = JSON.parse(localStorage.getItem('friendRequests') || '[]');
-            requests.push({
-                from: this.currentUser,
-                to: toUsername,
-                status: 'pending',
-                timestamp: new Date().toISOString()
-            });
-            localStorage.setItem('friendRequests', JSON.stringify(requests));
-            document.getElementById('friend-username').value = '';
-            await this.loadFriendRequests();
-            this.showMessage(`Friend request sent to ${toUsername}!`, 'success');
+        } catch (error) {
+            console.error('Error sending friend request:', error);
+            this.showMessage(getFriendlyErrorMessage(error), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
         }
     }
 

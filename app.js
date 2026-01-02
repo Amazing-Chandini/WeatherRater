@@ -22,11 +22,17 @@ class WeatherRater {
     constructor() {
         this.currentUser = this.loadCurrentUser();
         this.ratings = [];
+        this.friends = [];
+        this.friendsRatings = [];
         this.map = null;
+        this.friendsMap = null;
         this.markers = [];
+        this.friendsMarkers = [];
         this.currentWeather = null;
         this.currentLocation = null;
         this.useFirebase = false;
+        this.shareRatings = true;
+        this.currentTab = 'my-ratings';
 
         // Check Firebase availability
         setTimeout(() => {
@@ -48,6 +54,8 @@ class WeatherRater {
     async init() {
         if (this.currentUser) {
             await this.loadRatings();
+            await this.loadUserSettings();
+            await this.loadFriends();
             this.showMainApp();
         } else {
             this.showProfileSetup();
@@ -83,11 +91,16 @@ class WeatherRater {
         const storageType = this.useFirebase ? '☁️ Cloud' : '💾 Local';
         document.getElementById('current-user').textContent = `👤 ${this.currentUser} (${storageType})`;
 
+        // Set up privacy toggle
+        document.getElementById('share-ratings').checked = this.shareRatings;
+
         this.setupEventListeners();
         this.initMap();
+        this.initFriendsMap();
         this.displayStats();
         this.displayRatingsOnMap();
         this.displayRatingHistory();
+        this.displayFriendsList();
         this.getCurrentLocationAndWeather();
 
         if (this.useFirebase) {
@@ -122,6 +135,29 @@ class WeatherRater {
                 detailedSection.style.display = 'none';
                 toggleBtn.classList.remove('active');
             }
+        });
+
+        // Friend management
+        document.getElementById('add-friend-btn').addEventListener('click', () => {
+            this.addFriend();
+        });
+
+        document.getElementById('friend-username').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.addFriend();
+            }
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
+        });
+
+        // Privacy toggle
+        document.getElementById('share-ratings').addEventListener('change', (e) => {
+            this.togglePrivacy(e.target.checked);
         });
     }
 
@@ -604,9 +640,365 @@ class WeatherRater {
             </div>
         `;
     }
+
+    // Friend Management Methods
+
+    async loadUserSettings() {
+        if (this.useFirebase && window.db) {
+            try {
+                const userDoc = await getDocs(query(collection(window.db, 'users'), where('username', '==', this.currentUser)));
+                if (!userDoc.empty) {
+                    const userData = userDoc.docs[0].data();
+                    this.shareRatings = userData.shareRatings !== false;
+                }
+            } catch (error) {
+                console.error('Error loading user settings:', error);
+            }
+        } else {
+            const settings = localStorage.getItem(`${this.currentUser}_settings`);
+            if (settings) {
+                const parsed = JSON.parse(settings);
+                this.shareRatings = parsed.shareRatings !== false;
+            }
+        }
+    }
+
+    async loadFriends() {
+        if (this.useFirebase && window.db) {
+            try {
+                const userDoc = await getDocs(query(collection(window.db, 'users'), where('username', '==', this.currentUser)));
+                if (!userDoc.empty) {
+                    const userData = userDoc.docs[0].data();
+                    this.friends = userData.friends || [];
+                }
+            } catch (error) {
+                console.error('Error loading friends:', error);
+            }
+        } else {
+            const friends = localStorage.getItem(`${this.currentUser}_friends`);
+            this.friends = friends ? JSON.parse(friends) : [];
+        }
+    }
+
+    async addFriend() {
+        const friendUsername = document.getElementById('friend-username').value.trim();
+
+        if (!friendUsername) {
+            this.showMessage('Please enter a username', 'error');
+            return;
+        }
+
+        if (friendUsername === this.currentUser) {
+            this.showMessage('You cannot add yourself as a friend!', 'error');
+            return;
+        }
+
+        if (this.friends.includes(friendUsername)) {
+            this.showMessage('Already friends with this user', 'info');
+            return;
+        }
+
+        this.friends.push(friendUsername);
+        await this.saveFriends();
+        document.getElementById('friend-username').value = '';
+        this.displayFriendsList();
+        this.showMessage(`Added ${friendUsername} as a friend!`, 'success');
+    }
+
+    async removeFriend(friendUsername) {
+        if (!confirm(`Remove ${friendUsername} from your friends?`)) return;
+
+        this.friends = this.friends.filter(f => f !== friendUsername);
+        await this.saveFriends();
+        this.displayFriendsList();
+        this.showMessage(`Removed ${friendUsername} from friends`, 'info');
+
+        // Refresh friends' ratings if on that tab
+        if (this.currentTab === 'friends-ratings') {
+            await this.loadFriendsRatings();
+        }
+    }
+
+    async saveFriends() {
+        if (this.useFirebase && window.db) {
+            try {
+                const userQuery = query(collection(window.db, 'users'), where('username', '==', this.currentUser));
+                const userDocs = await getDocs(userQuery);
+
+                if (userDocs.empty) {
+                    await addDoc(collection(window.db, 'users'), {
+                        username: this.currentUser,
+                        friends: this.friends,
+                        shareRatings: this.shareRatings
+                    });
+                } else {
+                    const userDoc = userDocs.docs[0];
+                    await userDoc.ref.update({ friends: this.friends });
+                }
+            } catch (error) {
+                console.error('Error saving friends:', error);
+            }
+        } else {
+            localStorage.setItem(`${this.currentUser}_friends`, JSON.stringify(this.friends));
+        }
+    }
+
+    displayFriendsList() {
+        const listEl = document.getElementById('friends-list');
+
+        if (this.friends.length === 0) {
+            listEl.innerHTML = '<div class="no-friends">No friends added yet. Add friends to see their ratings!</div>';
+            return;
+        }
+
+        listEl.innerHTML = this.friends.map(friend => `
+            <div class="friend-item">
+                <div>
+                    <span class="friend-name">${friend}</span>
+                </div>
+                <button class="remove-friend-btn" onclick="app.removeFriend('${friend}')">Remove</button>
+            </div>
+        `).join('');
+    }
+
+    async togglePrivacy(shareRatings) {
+        this.shareRatings = shareRatings;
+
+        if (this.useFirebase && window.db) {
+            try {
+                const userQuery = query(collection(window.db, 'users'), where('username', '==', this.currentUser));
+                const userDocs = await getDocs(userQuery);
+
+                if (userDocs.empty) {
+                    await addDoc(collection(window.db, 'users'), {
+                        username: this.currentUser,
+                        friends: this.friends,
+                        shareRatings: this.shareRatings
+                    });
+                } else {
+                    const userDoc = userDocs.docs[0];
+                    await userDoc.ref.update({ shareRatings: this.shareRatings });
+                }
+            } catch (error) {
+                console.error('Error saving privacy settings:', error);
+            }
+        } else {
+            localStorage.setItem(`${this.currentUser}_settings`, JSON.stringify({ shareRatings: this.shareRatings }));
+        }
+
+        const message = shareRatings ? 'Your ratings are now shared with friends' : 'Your ratings are now private';
+        this.showMessage(message, 'success');
+    }
+
+    async switchTab(tabName) {
+        this.currentTab = tabName;
+
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+            content.style.display = 'none';
+        });
+
+        const activeTab = document.getElementById(`${tabName}-tab`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+            activeTab.style.display = 'block';
+        }
+
+        // Load friends' ratings if switching to friends tab
+        if (tabName === 'friends-ratings') {
+            await this.loadFriendsRatings();
+            this.displayFriendsRatings();
+            this.displayFriendsMap();
+        }
+    }
+
+    async loadFriendsRatings() {
+        if (this.friends.length === 0) {
+            this.friendsRatings = [];
+            return;
+        }
+
+        if (this.useFirebase && window.db) {
+            try {
+                // Get all friends who share their ratings
+                const friendsWithSharing = [];
+                for (const friend of this.friends) {
+                    const userQuery = query(collection(window.db, 'users'), where('username', '==', friend));
+                    const userDocs = await getDocs(userQuery);
+                    if (!userDocs.empty) {
+                        const userData = userDocs.docs[0].data();
+                        if (userData.shareRatings !== false) {
+                            friendsWithSharing.push(friend);
+                        }
+                    }
+                }
+
+                // Load ratings from friends who share
+                this.friendsRatings = [];
+                if (friendsWithSharing.length > 0) {
+                    const ratingsQuery = query(
+                        collection(window.db, 'ratings'),
+                        where('user', 'in', friendsWithSharing)
+                    );
+                    const ratingsSnapshot = await getDocs(ratingsQuery);
+                    ratingsSnapshot.forEach(doc => {
+                        this.friendsRatings.push({ id: doc.id, ...doc.data() });
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading friends ratings:', error);
+            }
+        } else {
+            // localStorage fallback
+            this.friendsRatings = [];
+            for (const friend of this.friends) {
+                const friendSettings = localStorage.getItem(`${friend}_settings`);
+                const settings = friendSettings ? JSON.parse(friendSettings) : { shareRatings: true };
+
+                if (settings.shareRatings !== false) {
+                    const stored = localStorage.getItem('weatherRatings');
+                    if (stored) {
+                        const allRatings = JSON.parse(stored);
+                        const friendRatings = allRatings.filter(r => r.user === friend);
+                        this.friendsRatings.push(...friendRatings);
+                    }
+                }
+            }
+        }
+    }
+
+    displayFriendsRatings() {
+        const historyEl = document.getElementById('friends-rating-history');
+
+        if (this.friends.length === 0) {
+            historyEl.innerHTML = '<div class="no-history">Add friends to see their ratings!</div>';
+            return;
+        }
+
+        if (this.friendsRatings.length === 0) {
+            historyEl.innerHTML = '<div class="no-history">Your friends haven\'t rated any weather yet, or they have privacy enabled.</div>';
+            return;
+        }
+
+        // Sort by most recent
+        const sorted = [...this.friendsRatings].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        historyEl.innerHTML = sorted.map(rating => {
+            const date = new Date(rating.timestamp);
+            const color = this.getRatingColor(rating.overallRating);
+
+            let weatherHTML = '';
+            if (rating.weather) {
+                weatherHTML = `
+                    <div class="history-weather">
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Temp</div>
+                            <div class="history-weather-value">${rating.weather.temperature}°F</div>
+                        </div>
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Humidity</div>
+                            <div class="history-weather-value">${rating.weather.humidity}%</div>
+                        </div>
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Wind</div>
+                            <div class="history-weather-value">${rating.weather.wind} mph</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="history-item">
+                    <div class="history-header">
+                        <div>
+                            <div class="history-rating" style="background: ${color}">${rating.overallRating}/10</div>
+                            <div style="margin-top: 5px; font-weight: bold; color: #667eea;">by ${rating.user}</div>
+                        </div>
+                        <div class="history-date">${date.toLocaleString()}</div>
+                    </div>
+                    <div class="history-location">📍 ${rating.latitude.toFixed(4)}, ${rating.longitude.toFixed(4)}</div>
+                    ${weatherHTML}
+                </div>
+            `;
+        }).join('');
+    }
+
+    initFriendsMap() {
+        const mapEl = document.getElementById('friends-map');
+        if (!mapEl) return;
+
+        this.friendsMap = L.map('friends-map').setView([20, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        }).addTo(this.friendsMap);
+    }
+
+    displayFriendsMap() {
+        if (!this.friendsMap) return;
+
+        // Clear existing markers
+        this.friendsMarkers.forEach(marker => marker.remove());
+        this.friendsMarkers = [];
+
+        if (this.friendsRatings.length === 0) return;
+
+        // Add markers for each rating
+        this.friendsRatings.forEach(rating => {
+            const iconColor = this.getRatingColor(rating.overallRating);
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    background: ${iconColor};
+                    width: 35px;
+                    height: 35px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 14px;
+                ">${rating.overallRating}</div>`,
+                iconSize: [35, 35],
+                iconAnchor: [17, 17]
+            });
+
+            const marker = L.marker([rating.latitude, rating.longitude], { icon: customIcon })
+                .addTo(this.friendsMap);
+
+            const date = new Date(rating.timestamp);
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 180px;">
+                    <strong style="font-size: 16px;">${rating.user}: ${rating.overallRating}/10</strong><br>
+                    <span style="color: #666; font-size: 12px;">${date.toLocaleString()}</span>
+                </div>
+            `);
+
+            this.friendsMarkers.push(marker);
+        });
+
+        // Fit map to show all markers
+        if (this.friendsRatings.length > 0) {
+            const bounds = L.latLngBounds(
+                this.friendsRatings.map(r => [r.latitude, r.longitude])
+            );
+            this.friendsMap.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
 }
 
 // Initialize the app when DOM is loaded
+let app;
 document.addEventListener('DOMContentLoaded', () => {
-    new WeatherRater();
+    app = new WeatherRater();
 });

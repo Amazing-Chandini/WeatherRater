@@ -28,6 +28,31 @@
                 </div>
             </div>
 
+            <!-- Privacy & Friends Section -->
+            <div class="social-section">
+                <div class="privacy-toggle">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="share-ratings" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Share my ratings with friends</span>
+                    </label>
+                </div>
+
+                <div class="friend-management">
+                    <div class="friend-add">
+                        <input type="text" id="friend-username" placeholder="Enter friend's username" maxlength="20">
+                        <button id="add-friend-btn" class="action-btn">Add Friend</button>
+                    </div>
+                    <div id="friends-list" class="friends-list"></div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="my-ratings">My Ratings</button>
+                <button class="tab-btn" data-tab="friends-ratings">Friends' Ratings</button>
+            </div>
+
             <p class="subtitle">How would you rate today's weather?</p>
 
             <!-- Current Weather Display -->
@@ -137,18 +162,38 @@
 
             <div id="message" class="message"></div>
 
-            <!-- Rating History Section -->
-            <div class="history-section">
-                <h2>Your Rating History</h2>
-                <div id="rating-history" class="rating-history"></div>
+            <!-- Tab Content: My Ratings -->
+            <div id="my-ratings-tab" class="tab-content active">
+                <!-- Rating History Section -->
+                <div class="history-section">
+                    <h2>Your Rating History</h2>
+                    <div id="rating-history" class="rating-history"></div>
+                </div>
+
+                <!-- Map Section -->
+                <div class="map-section">
+                    <h2>Rating Map</h2>
+                    <p class="map-subtitle">Your weather ratings across locations</p>
+                    <div id="map"></div>
+                    <div id="stats" class="stats"></div>
+                </div>
             </div>
 
-            <!-- Map Section -->
-            <div class="map-section">
-                <h2>Rating Map</h2>
-                <p class="map-subtitle">Your weather ratings across locations</p>
-                <div id="map"></div>
-                <div id="stats" class="stats"></div>
+            <!-- Tab Content: Friends' Ratings -->
+            <div id="friends-ratings-tab" class="tab-content" style="display: none;">
+                <!-- Friends' Rating History -->
+                <div class="history-section">
+                    <h2>Friends' Rating History</h2>
+                    <div id="friends-rating-history" class="rating-history"></div>
+                </div>
+
+                <!-- Friends' Map Section -->
+                <div class="map-section">
+                    <h2>Friends' Rating Map</h2>
+                    <p class="map-subtitle">Weather ratings from your friends</p>
+                    <div id="friends-map"></div>
+                    <div id="friends-stats" class="stats"></div>
+                </div>
             </div>
         </div>
     </div>

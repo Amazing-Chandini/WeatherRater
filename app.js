@@ -1,7 +1,7 @@
 // Weather Rater App with Cloud Storage (Firebase) and User Profiles
 
 // Import Firebase Firestore functions (available after Firebase script loads)
-let collection, addDoc, query, where, getDocs, onSnapshot, deleteDoc, doc;
+let collection, addDoc, query, where, getDocs, onSnapshot, deleteDoc, doc, updateDoc, orderBy;
 
 // Wait for Firebase to load
 setTimeout(async () => {
@@ -15,8 +15,19 @@ setTimeout(async () => {
         onSnapshot = firestoreModule.onSnapshot;
         deleteDoc = firestoreModule.deleteDoc;
         doc = firestoreModule.doc;
+        updateDoc = firestoreModule.updateDoc;
+        orderBy = firestoreModule.orderBy;
     }
 }, 100);
+
+// Simple password hashing (for demo purposes - in production, use proper authentication)
+async function simpleHash(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 class WeatherRater {
     constructor() {
@@ -26,6 +37,8 @@ class WeatherRater {
         this.friendsRatings = [];
         this.selectedFriend = null;
         this.selectedFriendRatings = [];
+        this.incomingRequests = [];
+        this.sentRequests = [];
         this.map = null;
         this.friendsMap = null;
         this.markers = [];
@@ -35,6 +48,7 @@ class WeatherRater {
         this.useFirebase = false;
         this.shareRatings = true;
         this.currentTab = 'my-ratings';
+        this.isAuthenticated = false;
 
         // Check Firebase availability
         setTimeout(() => {
@@ -54,10 +68,16 @@ class WeatherRater {
     }
 
     async init() {
-        if (this.currentUser) {
+        // Check if user has a saved session
+        const savedSession = localStorage.getItem('userSession');
+        if (savedSession) {
+            const session = JSON.parse(savedSession);
+            this.currentUser = session.username;
+            this.isAuthenticated = true;
             await this.loadRatings();
             await this.loadUserSettings();
             await this.loadFriends();
+            await this.loadFriendRequests();
             this.showMainApp();
         } else {
             this.showProfileSetup();
@@ -68,22 +88,174 @@ class WeatherRater {
         document.getElementById('user-profile-section').style.display = 'block';
         document.getElementById('main-app').style.display = 'none';
 
-        document.getElementById('save-username-btn').addEventListener('click', async () => {
-            const username = document.getElementById('username-input').value.trim();
-            if (username) {
-                this.setUser(username);
-                await this.loadRatings();
-                this.showMainApp();
-            } else {
-                alert('Please enter your name');
-            }
+        // Show signup form by default
+        document.getElementById('signup-form').style.display = 'block';
+        document.getElementById('login-form').style.display = 'none';
+
+        // Toggle between login and signup
+        document.getElementById('show-login').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
         });
 
-        document.getElementById('username-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('save-username-btn').click();
-            }
+        document.getElementById('show-signup').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'block';
         });
+
+        // Signup
+        document.getElementById('signup-btn').addEventListener('click', () => this.signup());
+        document.getElementById('signup-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.signup();
+        });
+
+        // Login
+        document.getElementById('login-btn').addEventListener('click', () => this.login());
+        document.getElementById('login-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.login();
+        });
+    }
+
+    async signup() {
+        const username = document.getElementById('signup-username').value.trim();
+        const password = document.getElementById('signup-password').value;
+
+        if (!username) {
+            alert('Please enter a username');
+            return;
+        }
+
+        if (password.length < 6) {
+            alert('Password must be at least 6 characters');
+            return;
+        }
+
+        // Check if username already exists
+        if (this.useFirebase && window.db) {
+            try {
+                const userQuery = query(collection(window.db, 'users'), where('username', '==', username));
+                const userDocs = await getDocs(userQuery);
+
+                if (!userDocs.empty) {
+                    alert('Username already exists. Please choose another or log in.');
+                    return;
+                }
+
+                // Create new user
+                const passwordHash = await simpleHash(password);
+                await addDoc(collection(window.db, 'users'), {
+                    username: username,
+                    passwordHash: passwordHash,
+                    friends: [],
+                    shareRatings: true,
+                    createdAt: new Date().toISOString()
+                });
+
+                this.setUserSession(username);
+                this.showMessage('Account created successfully!', 'success');
+                await this.loadRatings();
+                this.showMainApp();
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert('Error creating account. Please try again.');
+            }
+        } else {
+            // localStorage fallback
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            if (users[username]) {
+                alert('Username already exists. Please choose another.');
+                return;
+            }
+
+            const passwordHash = await simpleHash(password);
+            users[username] = {
+                passwordHash: passwordHash,
+                createdAt: new Date().toISOString()
+            };
+            localStorage.setItem('users', JSON.stringify(users));
+
+            this.setUserSession(username);
+            this.showMessage('Account created successfully!', 'success');
+            await this.loadRatings();
+            this.showMainApp();
+        }
+    }
+
+    async login() {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!username || !password) {
+            alert('Please enter both username and password');
+            return;
+        }
+
+        if (this.useFirebase && window.db) {
+            try {
+                const userQuery = query(collection(window.db, 'users'), where('username', '==', username));
+                const userDocs = await getDocs(userQuery);
+
+                if (userDocs.empty) {
+                    alert('User not found. Please sign up first.');
+                    return;
+                }
+
+                const userData = userDocs.docs[0].data();
+                const passwordHash = await simpleHash(password);
+
+                if (userData.passwordHash !== passwordHash) {
+                    alert('Incorrect password');
+                    return;
+                }
+
+                this.setUserSession(username);
+                this.showMessage('Welcome back!', 'success');
+                await this.loadRatings();
+                await this.loadUserSettings();
+                await this.loadFriends();
+                await this.loadFriendRequests();
+                this.showMainApp();
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Error logging in. Please try again.');
+            }
+        } else {
+            // localStorage fallback
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            if (!users[username]) {
+                alert('User not found. Please sign up first.');
+                return;
+            }
+
+            const passwordHash = await simpleHash(password);
+            if (users[username].passwordHash !== passwordHash) {
+                alert('Incorrect password');
+                return;
+            }
+
+            this.setUserSession(username);
+            this.showMessage('Welcome back!', 'success');
+            await this.loadRatings();
+            this.showMainApp();
+        }
+    }
+
+    setUserSession(username) {
+        this.currentUser = username;
+        this.isAuthenticated = true;
+        localStorage.setItem('userSession', JSON.stringify({
+            username: username,
+            loginTime: new Date().toISOString()
+        }));
+    }
+
+    logout() {
+        localStorage.removeItem('userSession');
+        this.currentUser = null;
+        this.isAuthenticated = false;
+        location.reload();
     }
 
     showMainApp() {
@@ -119,10 +291,8 @@ class WeatherRater {
         });
 
         document.getElementById('change-user-btn').addEventListener('click', () => {
-            if (confirm('Switch to a different user? Your ratings are saved.')) {
-                this.currentUser = null;
-                localStorage.removeItem('currentUser');
-                location.reload();
+            if (confirm('Log out? Your data is saved.')) {
+                this.logout();
             }
         });
 
@@ -700,11 +870,286 @@ class WeatherRater {
             return;
         }
 
-        this.friends.push(friendUsername);
-        await this.saveFriends();
-        document.getElementById('friend-username').value = '';
-        this.displayFriendsList();
-        this.showMessage(`Added ${friendUsername} as a friend!`, 'success');
+        // Check if request already sent
+        const alreadySent = this.sentRequests.some(req => req.to === friendUsername && req.status === 'pending');
+        if (alreadySent) {
+            this.showMessage('Friend request already sent', 'info');
+            return;
+        }
+
+        await this.sendFriendRequest(friendUsername);
+    }
+
+    async sendFriendRequest(toUsername) {
+        // Check if user exists
+        if (this.useFirebase && window.db) {
+            try {
+                const userQuery = query(collection(window.db, 'users'), where('username', '==', toUsername));
+                const userDocs = await getDocs(userQuery);
+
+                if (userDocs.empty) {
+                    this.showMessage('User not found', 'error');
+                    return;
+                }
+
+                // Send friend request
+                await addDoc(collection(window.db, 'friendRequests'), {
+                    from: this.currentUser,
+                    to: toUsername,
+                    status: 'pending',
+                    timestamp: new Date().toISOString()
+                });
+
+                document.getElementById('friend-username').value = '';
+                await this.loadFriendRequests();
+                this.showMessage(`Friend request sent to ${toUsername}!`, 'success');
+            } catch (error) {
+                console.error('Error sending friend request:', error);
+                this.showMessage('Error sending friend request', 'error');
+            }
+        } else {
+            // localStorage fallback
+            const requests = JSON.parse(localStorage.getItem('friendRequests') || '[]');
+            requests.push({
+                from: this.currentUser,
+                to: toUsername,
+                status: 'pending',
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem('friendRequests', JSON.stringify(requests));
+            document.getElementById('friend-username').value = '';
+            await this.loadFriendRequests();
+            this.showMessage(`Friend request sent to ${toUsername}!`, 'success');
+        }
+    }
+
+    async loadFriendRequests() {
+        this.incomingRequests = [];
+        this.sentRequests = [];
+
+        if (this.useFirebase && window.db) {
+            try {
+                // Load incoming requests
+                const incomingQuery = query(
+                    collection(window.db, 'friendRequests'),
+                    where('to', '==', this.currentUser),
+                    where('status', '==', 'pending')
+                );
+                const incomingSnapshot = await getDocs(incomingQuery);
+                incomingSnapshot.forEach(doc => {
+                    this.incomingRequests.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Load sent requests
+                const sentQuery = query(
+                    collection(window.db, 'friendRequests'),
+                    where('from', '==', this.currentUser),
+                    where('status', '==', 'pending')
+                );
+                const sentSnapshot = await getDocs(sentQuery);
+                sentSnapshot.forEach(doc => {
+                    this.sentRequests.push({ id: doc.id, ...doc.data() });
+                });
+            } catch (error) {
+                console.error('Error loading friend requests:', error);
+            }
+        } else {
+            // localStorage fallback
+            const allRequests = JSON.parse(localStorage.getItem('friendRequests') || '[]');
+            this.incomingRequests = allRequests.filter(r => r.to === this.currentUser && r.status === 'pending');
+            this.sentRequests = allRequests.filter(r => r.from === this.currentUser && r.status === 'pending');
+        }
+
+        this.displayIncomingRequests();
+        this.displaySentRequests();
+    }
+
+    async acceptFriendRequest(requestId, fromUsername) {
+        if (this.useFirebase && window.db) {
+            try {
+                // Update request status
+                const requestRef = doc(window.db, 'friendRequests', requestId);
+                await updateDoc(requestRef, { status: 'accepted' });
+
+                // Add to both users' friends lists
+                await this.addToFriendsList(fromUsername);
+                await this.addUserToOthersFriendsList(fromUsername, this.currentUser);
+
+                await this.loadFriendRequests();
+                await this.loadFriends();
+                this.showMessage(`You are now friends with ${fromUsername}!`, 'success');
+            } catch (error) {
+                console.error('Error accepting friend request:', error);
+                this.showMessage('Error accepting friend request', 'error');
+            }
+        } else {
+            // localStorage fallback
+            const requests = JSON.parse(localStorage.getItem('friendRequests') || '[]');
+            const request = requests.find(r => r.from === fromUsername && r.to === this.currentUser);
+            if (request) {
+                request.status = 'accepted';
+                localStorage.setItem('friendRequests', JSON.stringify(requests));
+            }
+
+            // Add to friends list (mutual)
+            this.friends.push(fromUsername);
+            await this.saveFriends();
+
+            await this.loadFriendRequests();
+            this.showMessage(`You are now friends with ${fromUsername}!`, 'success');
+        }
+    }
+
+    async addToFriendsList(friendUsername) {
+        if (!this.friends.includes(friendUsername)) {
+            this.friends.push(friendUsername);
+            await this.saveFriends();
+        }
+    }
+
+    async addUserToOthersFriendsList(otherUsername, userToAdd) {
+        if (this.useFirebase && window.db) {
+            try {
+                const userQuery = query(collection(window.db, 'users'), where('username', '==', otherUsername));
+                const userDocs = await getDocs(userQuery);
+
+                if (!userDocs.empty) {
+                    const userDoc = userDocs.docs[0];
+                    const userData = userDoc.data();
+                    const friends = userData.friends || [];
+
+                    if (!friends.includes(userToAdd)) {
+                        friends.push(userToAdd);
+                        await userDoc.ref.update({ friends: friends });
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating friend list:', error);
+            }
+        }
+    }
+
+    async declineFriendRequest(requestId, fromUsername) {
+        if (this.useFirebase && window.db) {
+            try {
+                const requestRef = doc(window.db, 'friendRequests', requestId);
+                await updateDoc(requestRef, { status: 'declined' });
+
+                await this.loadFriendRequests();
+                this.showMessage(`Declined friend request from ${fromUsername}`, 'info');
+            } catch (error) {
+                console.error('Error declining friend request:', error);
+                this.showMessage('Error declining friend request', 'error');
+            }
+        } else {
+            // localStorage fallback
+            const requests = JSON.parse(localStorage.getItem('friendRequests') || '[]');
+            const request = requests.find(r => r.from === fromUsername && r.to === this.currentUser);
+            if (request) {
+                request.status = 'declined';
+                localStorage.setItem('friendRequests', JSON.stringify(requests));
+            }
+
+            await this.loadFriendRequests();
+            this.showMessage(`Declined friend request from ${fromUsername}`, 'info');
+        }
+    }
+
+    async cancelFriendRequest(requestId, toUsername) {
+        if (this.useFirebase && window.db) {
+            try {
+                const requestRef = doc(window.db, 'friendRequests', requestId);
+                await deleteDoc(requestRef);
+
+                await this.loadFriendRequests();
+                this.showMessage(`Cancelled friend request to ${toUsername}`, 'info');
+            } catch (error) {
+                console.error('Error cancelling friend request:', error);
+                this.showMessage('Error cancelling friend request', 'error');
+            }
+        } else {
+            // localStorage fallback
+            let requests = JSON.parse(localStorage.getItem('friendRequests') || '[]');
+            requests = requests.filter(r => !(r.from === this.currentUser && r.to === toUsername));
+            localStorage.setItem('friendRequests', JSON.stringify(requests));
+
+            await this.loadFriendRequests();
+            this.showMessage(`Cancelled friend request to ${toUsername}`, 'info');
+        }
+    }
+
+    displayIncomingRequests() {
+        const listEl = document.getElementById('incoming-friend-requests');
+        const sectionEl = document.getElementById('incoming-requests-section');
+
+        if (!listEl || !sectionEl) return;
+
+        if (this.incomingRequests.length === 0) {
+            sectionEl.style.display = 'none';
+            return;
+        }
+
+        sectionEl.style.display = 'block';
+
+        listEl.innerHTML = this.incomingRequests.map(request => {
+            const initial = request.from.charAt(0).toUpperCase();
+            const timeAgo = this.getTimeAgo(request.timestamp);
+
+            return `
+                <div class="request-item">
+                    <div class="request-info">
+                        <div class="request-avatar">${initial}</div>
+                        <div class="request-details">
+                            <div class="request-from">${request.from}</div>
+                            <div class="request-time">${timeAgo}</div>
+                        </div>
+                    </div>
+                    <div class="request-actions">
+                        <button class="accept-btn" onclick="app.acceptFriendRequest('${request.id}', '${request.from}')">Accept</button>
+                        <button class="decline-btn" onclick="app.declineFriendRequest('${request.id}', '${request.from}')">Decline</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    displaySentRequests() {
+        const listEl = document.getElementById('sent-requests-list');
+
+        if (!listEl) return;
+
+        if (this.sentRequests.length === 0) {
+            listEl.innerHTML = '<div class="no-requests">No pending friend requests</div>';
+            return;
+        }
+
+        listEl.innerHTML = this.sentRequests.map(request => {
+            return `
+                <div class="sent-request-item">
+                    <div class="sent-request-info">
+                        <span class="sent-request-name">${request.to}</span>
+                        <span class="sent-request-status">• Pending</span>
+                    </div>
+                    <button class="cancel-request-btn" onclick="app.cancelFriendRequest('${request.id}', '${request.to}')">Cancel</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    getTimeAgo(timestamp) {
+        const now = new Date();
+        const past = new Date(timestamp);
+        const diffMs = now - past;
+        const diffMins = Math.floor(diffMs / 60000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+
+        const diffDays = Math.floor(diffHours / 24);
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     }
 
     async removeFriend(friendUsername) {
@@ -994,11 +1439,10 @@ class WeatherRater {
             activeTab.style.display = 'block';
         }
 
-        // Load friends' ratings if switching to friends tab
+        // Load friend requests and ratings when switching to friends tab
         if (tabName === 'friends-ratings') {
-            await this.loadFriendsRatings();
-            this.displayFriendsRatings();
-            this.displayFriendsMap();
+            await this.loadFriendRequests();
+            this.displayFriendsList();
         }
     }
 

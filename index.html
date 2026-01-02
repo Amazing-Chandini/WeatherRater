@@ -12,9 +12,34 @@
         <!-- User Profile Section -->
         <div id="user-profile-section" class="user-profile-section">
             <h1>Weather Rater</h1>
-            <div class="profile-input">
-                <input type="text" id="username-input" placeholder="Enter your name" maxlength="20">
-                <button id="save-username-btn" class="save-btn">Start Rating</button>
+            <p class="subtitle">Track and share your weather ratings with friends</p>
+
+            <!-- Sign Up Form -->
+            <div id="signup-form" class="auth-form" style="display: none;">
+                <h2>Create Account</h2>
+                <div class="profile-input">
+                    <input type="text" id="signup-username" placeholder="Choose a username" maxlength="20">
+                    <input type="password" id="signup-password" placeholder="Choose a password" minlength="6">
+                    <button id="signup-btn" class="save-btn">Create Account</button>
+                </div>
+                <p class="auth-toggle">Already have an account? <a href="#" id="show-login">Log in</a></p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form" style="display: none;">
+                <h2>Welcome Back</h2>
+                <div class="profile-input">
+                    <input type="text" id="login-username" placeholder="Username" maxlength="20">
+                    <input type="password" id="login-password" placeholder="Password">
+                    <button id="login-btn" class="save-btn">Log In</button>
+                </div>
+                <p class="auth-toggle">Don't have an account? <a href="#" id="show-signup">Sign up</a></p>
+            </div>
+
+            <!-- Incoming Friend Requests Notification -->
+            <div id="friend-requests-notification" class="friend-requests-notification" style="display: none;">
+                <h3>🔔 Friend Requests</h3>
+                <div id="incoming-requests-list"></div>
             </div>
         </div>
 
@@ -173,12 +198,18 @@
                     </div>
                 </div>
 
+                <!-- Incoming Friend Requests -->
+                <div class="incoming-requests-section" id="incoming-requests-section" style="display: none;">
+                    <h3>📬 Incoming Friend Requests</h3>
+                    <div id="incoming-friend-requests" class="incoming-requests-list"></div>
+                </div>
+
                 <!-- Add Friend -->
                 <div class="friend-add-section">
                     <h3>Add Friend</h3>
                     <div class="friend-add">
                         <input type="text" id="friend-username" placeholder="Enter friend's username" maxlength="20">
-                        <button id="add-friend-btn" class="action-btn">Add Friend</button>
+                        <button id="add-friend-btn" class="action-btn">Send Friend Request</button>
                     </div>
                 </div>
 

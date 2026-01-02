@@ -133,7 +133,7 @@ class WeatherRater {
         }
 
         // Check if username already exists
-        if (this.useFirebase && window.db) {
+        if (this.useFirebase && window.db && collection) {
             try {
                 const userQuery = query(collection(window.db, 'users'), where('username', '==', username));
                 const userDocs = await getDocs(userQuery);
@@ -192,7 +192,7 @@ class WeatherRater {
             return;
         }
 
-        if (this.useFirebase && window.db) {
+        if (this.useFirebase && window.db && collection) {
             try {
                 const userQuery = query(collection(window.db, 'users'), where('username', '==', username));
                 const userDocs = await getDocs(userQuery);

@@ -28,142 +28,123 @@
                 </div>
             </div>
 
-            <!-- Privacy & Friends Section -->
-            <div class="social-section">
-                <div class="privacy-toggle">
-                    <label class="toggle-label">
-                        <input type="checkbox" id="share-ratings" checked>
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-text">Share my ratings with friends</span>
-                    </label>
-                </div>
-
-                <div class="friend-management">
-                    <div class="friend-add">
-                        <input type="text" id="friend-username" placeholder="Enter friend's username" maxlength="20">
-                        <button id="add-friend-btn" class="action-btn">Add Friend</button>
-                    </div>
-                    <div id="friends-list" class="friends-list"></div>
-                </div>
-            </div>
-
             <!-- Tab Navigation -->
             <div class="tab-navigation">
-                <button class="tab-btn active" data-tab="my-ratings">My Ratings</button>
-                <button class="tab-btn" data-tab="friends-ratings">Friends' Ratings</button>
-            </div>
-
-            <p class="subtitle">How would you rate today's weather?</p>
-
-            <!-- Current Weather Display -->
-            <div id="current-weather" class="current-weather">
-                <div class="weather-loading">Fetching weather data...</div>
-            </div>
-
-            <!-- Overall Rating Section -->
-            <div class="rating-section">
-                <h3>Overall Weather Rating</h3>
-                <div class="rating-buttons">
-                    <button class="rating-btn" data-rating="1">1</button>
-                    <button class="rating-btn" data-rating="2">2</button>
-                    <button class="rating-btn" data-rating="3">3</button>
-                    <button class="rating-btn" data-rating="4">4</button>
-                    <button class="rating-btn" data-rating="5">5</button>
-                    <button class="rating-btn" data-rating="6">6</button>
-                    <button class="rating-btn" data-rating="7">7</button>
-                    <button class="rating-btn" data-rating="8">8</button>
-                    <button class="rating-btn" data-rating="9">9</button>
-                    <button class="rating-btn" data-rating="10">10</button>
-                </div>
-
-                <div class="rating-labels">
-                    <span class="label-left">Terrible</span>
-                    <span class="label-right">Perfect</span>
-                </div>
-            </div>
-
-            <!-- Detailed Ratings Dropdown -->
-            <div class="detailed-ratings-section">
-                <button id="toggle-detailed-btn" class="toggle-detailed-btn">
-                    <span>Rate Individual Weather Factors</span>
-                    <span class="arrow">▼</span>
-                </button>
-
-                <div id="detailed-ratings" class="detailed-ratings" style="display: none;">
-                    <div class="detailed-rating-item">
-                        <label>Temperature</label>
-                        <select id="rating-temperature" class="rating-select">
-                            <option value="">Rate 1-10</option>
-                            <option value="1">1 - Too Cold/Hot</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5 - Moderate</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10 - Perfect</option>
-                        </select>
-                    </div>
-
-                    <div class="detailed-rating-item">
-                        <label>Humidity</label>
-                        <select id="rating-humidity" class="rating-select">
-                            <option value="">Rate 1-10</option>
-                            <option value="1">1 - Too Humid/Dry</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5 - Moderate</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10 - Perfect</option>
-                        </select>
-                    </div>
-
-                    <div class="detailed-rating-item">
-                        <label>Wind</label>
-                        <select id="rating-wind" class="rating-select">
-                            <option value="">Rate 1-10</option>
-                            <option value="1">1 - Too Windy/Still</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5 - Moderate</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10 - Perfect</option>
-                        </select>
-                    </div>
-
-                    <div class="detailed-rating-item">
-                        <label>Precipitation</label>
-                        <select id="rating-precipitation" class="rating-select">
-                            <option value="">Rate 1-10</option>
-                            <option value="1">1 - Terrible</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5 - Moderate</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10 - Perfect</option>
-                        </select>
-                    </div>
-                </div>
+                <button class="tab-btn active" data-tab="my-ratings">Rating</button>
+                <button class="tab-btn" data-tab="friends-ratings">Friends</button>
             </div>
 
             <div id="message" class="message"></div>
 
             <!-- Tab Content: My Ratings -->
             <div id="my-ratings-tab" class="tab-content active">
+                <p class="subtitle">How would you rate today's weather?</p>
+
+                <!-- Current Weather Display -->
+                <div id="current-weather" class="current-weather">
+                    <div class="weather-loading">Fetching weather data...</div>
+                </div>
+
+                <!-- Overall Rating Section -->
+                <div class="rating-section">
+                    <h3>Overall Weather Rating</h3>
+                    <div class="rating-buttons">
+                        <button class="rating-btn" data-rating="1">1</button>
+                        <button class="rating-btn" data-rating="2">2</button>
+                        <button class="rating-btn" data-rating="3">3</button>
+                        <button class="rating-btn" data-rating="4">4</button>
+                        <button class="rating-btn" data-rating="5">5</button>
+                        <button class="rating-btn" data-rating="6">6</button>
+                        <button class="rating-btn" data-rating="7">7</button>
+                        <button class="rating-btn" data-rating="8">8</button>
+                        <button class="rating-btn" data-rating="9">9</button>
+                        <button class="rating-btn" data-rating="10">10</button>
+                    </div>
+
+                    <div class="rating-labels">
+                        <span class="label-left">Terrible</span>
+                        <span class="label-right">Perfect</span>
+                    </div>
+                </div>
+
+                <!-- Detailed Ratings Dropdown -->
+                <div class="detailed-ratings-section">
+                    <button id="toggle-detailed-btn" class="toggle-detailed-btn">
+                        <span>Rate Individual Weather Factors</span>
+                        <span class="arrow">▼</span>
+                    </button>
+
+                    <div id="detailed-ratings" class="detailed-ratings" style="display: none;">
+                        <div class="detailed-rating-item">
+                            <label>Temperature</label>
+                            <select id="rating-temperature" class="rating-select">
+                                <option value="">Rate 1-10</option>
+                                <option value="1">1 - Too Cold/Hot</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 - Moderate</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10 - Perfect</option>
+                            </select>
+                        </div>
+
+                        <div class="detailed-rating-item">
+                            <label>Humidity</label>
+                            <select id="rating-humidity" class="rating-select">
+                                <option value="">Rate 1-10</option>
+                                <option value="1">1 - Too Humid/Dry</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 - Moderate</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10 - Perfect</option>
+                            </select>
+                        </div>
+
+                        <div class="detailed-rating-item">
+                            <label>Wind</label>
+                            <select id="rating-wind" class="rating-select">
+                                <option value="">Rate 1-10</option>
+                                <option value="1">1 - Too Windy/Still</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 - Moderate</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10 - Perfect</option>
+                            </select>
+                        </div>
+
+                        <div class="detailed-rating-item">
+                            <label>Precipitation</label>
+                            <select id="rating-precipitation" class="rating-select">
+                                <option value="">Rate 1-10</option>
+                                <option value="1">1 - Terrible</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 - Moderate</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10 - Perfect</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Rating History Section -->
                 <div class="history-section">
                     <h2>Your Rating History</h2>
@@ -181,18 +162,47 @@
 
             <!-- Tab Content: Friends' Ratings -->
             <div id="friends-ratings-tab" class="tab-content" style="display: none;">
-                <!-- Friends' Rating History -->
-                <div class="history-section">
-                    <h2>Friends' Rating History</h2>
-                    <div id="friends-rating-history" class="rating-history"></div>
+                <!-- Privacy Toggle -->
+                <div class="social-section">
+                    <div class="privacy-toggle">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="share-ratings" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Share my ratings with friends</span>
+                        </label>
+                    </div>
                 </div>
 
-                <!-- Friends' Map Section -->
-                <div class="map-section">
-                    <h2>Friends' Rating Map</h2>
-                    <p class="map-subtitle">Weather ratings from your friends</p>
+                <!-- Add Friend -->
+                <div class="friend-add-section">
+                    <h3>Add Friend</h3>
+                    <div class="friend-add">
+                        <input type="text" id="friend-username" placeholder="Enter friend's username" maxlength="20">
+                        <button id="add-friend-btn" class="action-btn">Add Friend</button>
+                    </div>
+                </div>
+
+                <!-- Friends List (Clickable) -->
+                <div class="friends-section">
+                    <h3>My Friends</h3>
+                    <p class="section-subtitle">Click a friend's name to view their ratings</p>
+                    <div id="friends-list" class="friends-list-clickable"></div>
+                </div>
+
+                <!-- Selected Friend's Map Section -->
+                <div class="map-section" id="friend-map-section" style="display: none;">
+                    <h2 id="selected-friend-name">Friend's Ratings</h2>
                     <div id="friends-map"></div>
                     <div id="friends-stats" class="stats"></div>
+                </div>
+
+                <!-- Sent Friend Requests -->
+                <div class="sent-requests-section">
+                    <h3>Sent Friend Requests</h3>
+                    <p class="section-subtitle">Friend requests you've sent (coming soon)</p>
+                    <div id="sent-requests-list" class="sent-requests-list">
+                        <div class="no-requests">No pending friend requests</div>
+                    </div>
                 </div>
             </div>
         </div>

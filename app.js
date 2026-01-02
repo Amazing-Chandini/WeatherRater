@@ -24,6 +24,8 @@ class WeatherRater {
         this.ratings = [];
         this.friends = [];
         this.friendsRatings = [];
+        this.selectedFriend = null;
+        this.selectedFriendRatings = [];
         this.map = null;
         this.friendsMap = null;
         this.markers = [];
@@ -751,14 +753,196 @@ class WeatherRater {
             return;
         }
 
-        listEl.innerHTML = this.friends.map(friend => `
-            <div class="friend-item">
-                <div>
-                    <span class="friend-name">${friend}</span>
+        listEl.innerHTML = this.friends.map(friend => {
+            const isSelected = this.selectedFriend === friend;
+            const initial = friend.charAt(0).toUpperCase();
+
+            return `
+                <div class="friend-list-item ${isSelected ? 'selected' : ''}" data-friend="${friend}">
+                    <div class="friend-list-info">
+                        <div class="friend-avatar">${initial}</div>
+                        <div class="friend-list-name">${friend}</div>
+                    </div>
+                    <div class="friend-list-actions">
+                        <button class="view-btn" onclick="app.selectFriend('${friend}')">
+                            ${isSelected ? 'Viewing' : 'View Ratings'}
+                        </button>
+                        <button class="remove-friend-btn" onclick="app.removeFriend('${friend}')">Remove</button>
+                    </div>
                 </div>
-                <button class="remove-friend-btn" onclick="app.removeFriend('${friend}')">Remove</button>
+            `;
+        }).join('');
+    }
+
+    async selectFriend(friendName) {
+        this.selectedFriend = friendName;
+        this.displayFriendsList(); // Refresh list to show selected state
+
+        // Load this friend's ratings
+        await this.loadSelectedFriendRatings(friendName);
+
+        // Display on map
+        this.displaySelectedFriendMap();
+
+        // Show map section
+        const mapSection = document.getElementById('friend-map-section');
+        const friendNameEl = document.getElementById('selected-friend-name');
+        if (mapSection && friendNameEl) {
+            mapSection.style.display = 'block';
+            friendNameEl.textContent = `${friendName}'s Ratings`;
+        }
+
+        // Scroll to map
+        mapSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async loadSelectedFriendRatings(friendName) {
+        this.selectedFriendRatings = [];
+
+        if (this.useFirebase && window.db) {
+            try {
+                // Check if friend shares their ratings
+                const userQuery = query(collection(window.db, 'users'), where('username', '==', friendName));
+                const userDocs = await getDocs(userQuery);
+
+                let canView = true;
+                if (!userDocs.empty) {
+                    const userData = userDocs.docs[0].data();
+                    canView = userData.shareRatings !== false;
+                }
+
+                if (canView) {
+                    // Load friend's ratings
+                    const ratingsQuery = query(
+                        collection(window.db, 'ratings'),
+                        where('user', '==', friendName)
+                    );
+                    const ratingsSnapshot = await getDocs(ratingsQuery);
+                    ratingsSnapshot.forEach(doc => {
+                        this.selectedFriendRatings.push({ id: doc.id, ...doc.data() });
+                    });
+                } else {
+                    this.showMessage(`${friendName} has privacy enabled`, 'info');
+                }
+            } catch (error) {
+                console.error('Error loading friend ratings:', error);
+            }
+        } else {
+            // localStorage fallback
+            const friendSettings = localStorage.getItem(`${friendName}_settings`);
+            const settings = friendSettings ? JSON.parse(friendSettings) : { shareRatings: true };
+
+            if (settings.shareRatings !== false) {
+                const stored = localStorage.getItem('weatherRatings');
+                if (stored) {
+                    const allRatings = JSON.parse(stored);
+                    this.selectedFriendRatings = allRatings.filter(r => r.user === friendName);
+                }
+            } else {
+                this.showMessage(`${friendName} has privacy enabled`, 'info');
+            }
+        }
+    }
+
+    displaySelectedFriendMap() {
+        if (!this.friendsMap) return;
+
+        // Clear existing markers
+        this.friendsMarkers.forEach(marker => marker.remove());
+        this.friendsMarkers = [];
+
+        if (this.selectedFriendRatings.length === 0) {
+            this.showMessage(`${this.selectedFriend} hasn't rated any weather yet`, 'info');
+            return;
+        }
+
+        // Add markers for selected friend's ratings
+        this.selectedFriendRatings.forEach(rating => {
+            const iconColor = this.getRatingColor(rating.overallRating);
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    background: ${iconColor};
+                    width: 35px;
+                    height: 35px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 14px;
+                ">${rating.overallRating}</div>`,
+                iconSize: [35, 35],
+                iconAnchor: [17, 17]
+            });
+
+            const marker = L.marker([rating.latitude, rating.longitude], { icon: customIcon })
+                .addTo(this.friendsMap);
+
+            const date = new Date(rating.timestamp);
+            let weatherInfo = '';
+            if (rating.weather) {
+                weatherInfo = `
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd;">
+                        <small>
+                            🌡️ ${rating.weather.temperature}°F | 💧 ${rating.weather.humidity}% |
+                            💨 ${rating.weather.wind} mph
+                        </small>
+                    </div>
+                `;
+            }
+
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 180px;">
+                    <strong style="font-size: 16px;">${this.selectedFriend}: ${rating.overallRating}/10</strong><br>
+                    <span style="color: #666; font-size: 12px;">${date.toLocaleString()}</span>
+                    ${weatherInfo}
+                </div>
+            `);
+
+            this.friendsMarkers.push(marker);
+        });
+
+        // Fit map to show all markers
+        if (this.selectedFriendRatings.length > 0) {
+            const bounds = L.latLngBounds(
+                this.selectedFriendRatings.map(r => [r.latitude, r.longitude])
+            );
+            this.friendsMap.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Update stats
+        this.displaySelectedFriendStats();
+    }
+
+    displaySelectedFriendStats() {
+        const statsEl = document.getElementById('friends-stats');
+        if (!statsEl || this.selectedFriendRatings.length === 0) {
+            if (statsEl) statsEl.innerHTML = '';
+            return;
+        }
+
+        const totalRatings = this.selectedFriendRatings.length;
+        const averageRating = (this.selectedFriendRatings.reduce((sum, r) => sum + r.overallRating, 0) / totalRatings).toFixed(1);
+        const lastRating = this.selectedFriendRatings[this.selectedFriendRatings.length - 1];
+
+        statsEl.innerHTML = `
+            <div class="stat-item">
+                <div class="stat-label">Total Ratings</div>
+                <div class="stat-value">${totalRatings}</div>
             </div>
-        `).join('');
+            <div class="stat-item">
+                <div class="stat-label">Average Rating</div>
+                <div class="stat-value">${averageRating}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Last Rating</div>
+                <div class="stat-value">${lastRating.overallRating}/10</div>
+            </div>
+        `;
     }
 
     async togglePrivacy(shareRatings) {

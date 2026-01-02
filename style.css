@@ -763,6 +763,122 @@ h3 {
     display: block;
 }
 
+/* Friends Tab Specific Sections */
+.friend-add-section,
+.friends-section,
+.sent-requests-section {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.section-subtitle {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.friends-list-clickable {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.friend-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: 2px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.friend-list-item:hover {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.friend-list-item.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.friend-list-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.friend-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.friend-list-item.selected .friend-avatar {
+    background: white;
+    color: #667eea;
+}
+
+.friend-list-name {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.friend-list-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.view-btn {
+    padding: 8px 16px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-btn:hover {
+    background: #764ba2;
+    transform: translateY(-2px);
+}
+
+.friend-list-item.selected .view-btn {
+    background: white;
+    color: #667eea;
+}
+
+.sent-requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.no-requests {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 20px;
+}
+
 @media (max-width: 600px) {
     .friend-add {
         flex-direction: column;
@@ -779,5 +895,16 @@ h3 {
     .tab-btn {
         padding: 10px 16px;
         font-size: 0.9rem;
+    }
+
+    .friend-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .friend-list-actions {
+        width: 100%;
+        justify-content: flex-end;
     }
 }

@@ -1020,7 +1020,8 @@ class WeatherRater {
 
                     if (!friends.includes(userToAdd)) {
                         friends.push(userToAdd);
-                        await userDoc.ref.update({ friends: friends });
+                        // Use updateDoc instead of userDoc.ref.update
+                        await updateDoc(userDoc.ref, { friends: friends });
                     }
                 }
             } catch (error) {
@@ -1180,7 +1181,8 @@ class WeatherRater {
                     });
                 } else {
                     const userDoc = userDocs.docs[0];
-                    await userDoc.ref.update({ friends: this.friends });
+                    // Use updateDoc instead of userDoc.ref.update
+                    await updateDoc(userDoc.ref, { friends: this.friends });
                 }
             } catch (error) {
                 console.error('Error saving friends:', error);
@@ -1406,7 +1408,8 @@ class WeatherRater {
                     });
                 } else {
                     const userDoc = userDocs.docs[0];
-                    await userDoc.ref.update({ shareRatings: this.shareRatings });
+                    // Use updateDoc instead of userDoc.ref.update
+                    await updateDoc(userDoc.ref, { shareRatings: this.shareRatings });
                 }
             } catch (error) {
                 console.error('Error saving privacy settings:', error);

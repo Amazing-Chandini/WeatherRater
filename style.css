@@ -159,6 +159,14 @@ h2 {
     margin-bottom: 20px;
 }
 
+#friends-map {
+    height: 400px;
+    width: 100%;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
 .stats {
     display: flex;
     justify-content: space-around;
@@ -572,7 +580,7 @@ h3 {
         padding: 30px 20px;
     }
 
-    #map {
+    #map, #friends-map {
         height: 300px;
     }
 

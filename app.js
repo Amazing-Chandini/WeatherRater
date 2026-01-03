@@ -1408,6 +1408,11 @@ class WeatherRater {
     displaySelectedFriendMap() {
         if (!this.friendsMap) return;
 
+        // Force map to recalculate size (needed because it was hidden)
+        setTimeout(() => {
+            this.friendsMap.invalidateSize();
+        }, 100);
+
         // Clear existing markers
         this.friendsMarkers.forEach(marker => marker.remove());
         this.friendsMarkers = [];

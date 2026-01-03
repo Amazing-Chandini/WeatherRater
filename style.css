@@ -875,6 +875,77 @@ h3 {
     box-shadow: 0 4px 14px rgba(18, 44, 52, 0.2);
 }
 
+.friends-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.friends-settings {
+    position: relative;
+}
+
+.settings-btn {
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(142, 184, 229, 0.3);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #4ea5d9;
+    transform: rotate(30deg);
+}
+
+.settings-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(142, 184, 229, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(18, 44, 52, 0.3);
+    min-width: 180px;
+    z-index: 1000;
+}
+
+.settings-dropdown-item {
+    width: 100%;
+    padding: 12px 18px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 10px;
+}
+
+.settings-dropdown-item:hover {
+    background: rgba(78, 165, 217, 0.2);
+}
+
+.remove-friend-btn {
+    display: none;
+}
+
+.remove-friend-btn.show {
+    display: inline-block;
+}
+
 /* Incoming Friend Requests */
 .incoming-requests-list {
     display: flex;

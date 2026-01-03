@@ -81,6 +81,7 @@ class WeatherRater {
         this.shareRatings = true;
         this.currentTab = 'my-ratings';
         this.isAuthenticated = false;
+        this.manageFriendsMode = false;
 
         // Rate limiting
         this.lastRatingTime = null;
@@ -394,6 +395,31 @@ class WeatherRater {
         document.getElementById('share-ratings').addEventListener('change', (e) => {
             this.togglePrivacy(e.target.checked);
         });
+
+        // Friends settings dropdown
+        const settingsBtn = document.getElementById('friends-settings-btn');
+        const settingsDropdown = document.getElementById('friends-settings-dropdown');
+        const manageFriendsBtn = document.getElementById('manage-friends-btn');
+
+        if (settingsBtn && settingsDropdown && manageFriendsBtn) {
+            settingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = settingsDropdown.style.display === 'block';
+                settingsDropdown.style.display = isVisible ? 'none' : 'block';
+            });
+
+            manageFriendsBtn.addEventListener('click', () => {
+                this.toggleManageFriendsMode();
+                settingsDropdown.style.display = 'none';
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!settingsBtn.contains(e.target) && !settingsDropdown.contains(e.target)) {
+                    settingsDropdown.style.display = 'none';
+                }
+            });
+        }
     }
 
     setUser(username) {
@@ -1314,6 +1340,7 @@ class WeatherRater {
         listEl.innerHTML = this.friends.map(friend => {
             const isSelected = this.selectedFriend === friend;
             const initial = friend.charAt(0).toUpperCase();
+            const showRemove = this.manageFriendsMode ? 'show' : '';
 
             return `
                 <div class="friend-list-item ${isSelected ? 'selected' : ''}" data-friend="${friend}">
@@ -1322,10 +1349,10 @@ class WeatherRater {
                         <div class="friend-list-name">${friend}</div>
                     </div>
                     <div class="friend-list-actions">
-                        <button class="view-btn" onclick="app.selectFriend('${friend}')">
-                            ${isSelected ? 'Viewing' : 'View Ratings'}
+                        <button class="view-btn" onclick="app.${isSelected ? 'hideFriendMap' : 'selectFriend'}('${friend}')">
+                            ${isSelected ? 'Hide' : 'View Ratings'}
                         </button>
-                        <button class="remove-friend-btn" onclick="app.removeFriend('${friend}')">Remove</button>
+                        <button class="remove-friend-btn ${showRemove}" onclick="app.removeFriend('${friend}')">Remove</button>
                     </div>
                 </div>
             `;
@@ -1355,6 +1382,30 @@ class WeatherRater {
 
         // Scroll to map
         mapSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    hideFriendMap() {
+        this.selectedFriend = null;
+        this.selectedFriendRatings = [];
+        this.displayFriendsList(); // Refresh list to show unselected state
+
+        // Hide map section
+        const mapSection = document.getElementById('friend-map-section');
+        if (mapSection) {
+            mapSection.style.display = 'none';
+        }
+
+        // Clear markers
+        this.friendsMarkers.forEach(marker => marker.remove());
+        this.friendsMarkers = [];
+    }
+
+    toggleManageFriendsMode() {
+        this.manageFriendsMode = !this.manageFriendsMode;
+        this.displayFriendsList();
+
+        const message = this.manageFriendsMode ? 'Manage mode enabled' : 'Manage mode disabled';
+        this.showMessage(message, 'info');
     }
 
     async loadSelectedFriendRatings(friendName) {

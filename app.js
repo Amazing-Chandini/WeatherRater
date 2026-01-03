@@ -1342,6 +1342,9 @@ class WeatherRater {
         // Display on map
         this.displaySelectedFriendMap();
 
+        // Display rating history
+        this.displayFriendRatingHistory();
+
         // Show map section
         const mapSection = document.getElementById('friend-map-section');
         const friendNameEl = document.getElementById('selected-friend-name');
@@ -1485,7 +1488,10 @@ class WeatherRater {
 
         const totalRatings = this.selectedFriendRatings.length;
         const averageRating = (this.selectedFriendRatings.reduce((sum, r) => sum + r.overallRating, 0) / totalRatings).toFixed(1);
-        const lastRating = this.selectedFriendRatings[this.selectedFriendRatings.length - 1];
+        const highestRating = Math.max(...this.selectedFriendRatings.map(r => r.overallRating));
+        const lowestRating = Math.min(...this.selectedFriendRatings.map(r => r.overallRating));
+        const sortedByDate = [...this.selectedFriendRatings].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const mostRecent = sortedByDate[0];
 
         statsEl.innerHTML = `
             <div class="stat-item">
@@ -1497,10 +1503,92 @@ class WeatherRater {
                 <div class="stat-value">${averageRating}</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">Last Rating</div>
-                <div class="stat-value">${lastRating.overallRating}/10</div>
+                <div class="stat-label">Highest</div>
+                <div class="stat-value">${highestRating}/10</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Lowest</div>
+                <div class="stat-value">${lowestRating}/10</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Most Recent</div>
+                <div class="stat-value">${mostRecent.overallRating}/10</div>
             </div>
         `;
+    }
+
+    displayFriendRatingHistory() {
+        const historyEl = document.getElementById('friend-rating-history');
+        if (!historyEl) return;
+
+        if (this.selectedFriendRatings.length === 0) {
+            historyEl.innerHTML = `<div class="no-history">${this.selectedFriend} hasn't rated any weather yet.</div>`;
+            return;
+        }
+
+        const sortedRatings = [...this.selectedFriendRatings].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        historyEl.innerHTML = sortedRatings.map(rating => {
+            const date = new Date(rating.timestamp);
+            const color = this.getRatingColor(rating.overallRating);
+
+            let weatherHTML = '';
+            if (rating.weather) {
+                weatherHTML = `
+                    <div class="history-weather">
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Temp</div>
+                            <div class="history-weather-value">${rating.weather.temperature}°F</div>
+                        </div>
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Humidity</div>
+                            <div class="history-weather-value">${rating.weather.humidity}%</div>
+                        </div>
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Wind</div>
+                            <div class="history-weather-value">${rating.weather.wind} mph</div>
+                        </div>
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Precip</div>
+                            <div class="history-weather-value">${rating.weather.precipitation}"</div>
+                        </div>
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Dew Pt</div>
+                            <div class="history-weather-value">${rating.weather.dewPoint}°F</div>
+                        </div>
+                        <div class="history-weather-item">
+                            <div class="history-weather-label">Time</div>
+                            <div class="history-weather-value">${rating.weather.timeOfDay}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let detailedHTML = '';
+            if (rating.detailedRatings) {
+                const details = [];
+                if (rating.detailedRatings.temperature) details.push(`<div class="history-detailed-item"><span class="history-detailed-label">Temp:</span><span class="history-detailed-value">${rating.detailedRatings.temperature}/10</span></div>`);
+                if (rating.detailedRatings.humidity) details.push(`<div class="history-detailed-item"><span class="history-detailed-label">Humidity:</span><span class="history-detailed-value">${rating.detailedRatings.humidity}/10</span></div>`);
+                if (rating.detailedRatings.wind) details.push(`<div class="history-detailed-item"><span class="history-detailed-label">Wind:</span><span class="history-detailed-value">${rating.detailedRatings.wind}/10</span></div>`);
+                if (rating.detailedRatings.precipitation) details.push(`<div class="history-detailed-item"><span class="history-detailed-label">Precip:</span><span class="history-detailed-value">${rating.detailedRatings.precipitation}/10</span></div>`);
+
+                if (details.length > 0) {
+                    detailedHTML = `<div class="history-detailed">${details.join('')}</div>`;
+                }
+            }
+
+            return `
+                <div class="history-item">
+                    <div class="history-header">
+                        <div class="history-rating" style="background: ${color}">${rating.overallRating}/10</div>
+                        <div class="history-date">${date.toLocaleString()}</div>
+                    </div>
+                    <div class="history-location">📍 ${rating.latitude.toFixed(4)}, ${rating.longitude.toFixed(4)}</div>
+                    ${weatherHTML}
+                    ${detailedHTML}
+                </div>
+            `;
+        }).join('');
     }
 
     async togglePrivacy(shareRatings) {

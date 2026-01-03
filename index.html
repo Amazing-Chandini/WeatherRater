@@ -187,14 +187,24 @@
 
             <!-- Tab Content: Friends' Ratings -->
             <div id="friends-ratings-tab" class="tab-content" style="display: none;">
-                <!-- Privacy Toggle -->
-                <div class="social-section">
-                    <div class="privacy-toggle">
-                        <label class="toggle-label">
-                            <input type="checkbox" id="share-ratings" checked>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-text">Share my ratings with friends</span>
-                        </label>
+                <!-- Friends List (Clickable) -->
+                <div class="friends-section">
+                    <h3>My Friends</h3>
+                    <p class="section-subtitle">Click a friend's name to view their ratings</p>
+                    <div id="friends-list" class="friends-list-clickable"></div>
+                </div>
+
+                <!-- Selected Friend's Map Section -->
+                <div class="map-section" id="friend-map-section" style="display: none;">
+                    <h2 id="selected-friend-name">Friend's Ratings</h2>
+                    <p class="map-subtitle">Your friend's weather ratings across locations</p>
+                    <div id="friends-map"></div>
+                    <div id="friends-stats" class="stats"></div>
+
+                    <!-- Friend's Rating History -->
+                    <div class="history-section" style="margin-top: 30px;">
+                        <h3>Rating History</h3>
+                        <div id="friend-rating-history" class="rating-history"></div>
                     </div>
                 </div>
 
@@ -213,26 +223,23 @@
                     </div>
                 </div>
 
-                <!-- Friends List (Clickable) -->
-                <div class="friends-section">
-                    <h3>My Friends</h3>
-                    <p class="section-subtitle">Click a friend's name to view their ratings</p>
-                    <div id="friends-list" class="friends-list-clickable"></div>
-                </div>
-
-                <!-- Selected Friend's Map Section -->
-                <div class="map-section" id="friend-map-section" style="display: none;">
-                    <h2 id="selected-friend-name">Friend's Ratings</h2>
-                    <div id="friends-map"></div>
-                    <div id="friends-stats" class="stats"></div>
-                </div>
-
                 <!-- Sent Friend Requests -->
                 <div class="sent-requests-section">
                     <h3>Sent Friend Requests</h3>
-                    <p class="section-subtitle">Friend requests you've sent (coming soon)</p>
+                    <p class="section-subtitle">Pending requests you've sent</p>
                     <div id="sent-requests-list" class="sent-requests-list">
                         <div class="no-requests">No pending friend requests</div>
+                    </div>
+                </div>
+
+                <!-- Privacy Toggle -->
+                <div class="social-section">
+                    <div class="privacy-toggle">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="share-ratings" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">Share my ratings with friends</span>
+                        </label>
                     </div>
                 </div>
             </div>

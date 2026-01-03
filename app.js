@@ -125,9 +125,9 @@ class WeatherRater {
         document.getElementById('user-profile-section').style.display = 'block';
         document.getElementById('main-app').style.display = 'none';
 
-        // Show signup form by default
-        document.getElementById('signup-form').style.display = 'block';
-        document.getElementById('login-form').style.display = 'none';
+        // Show login form by default
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('signup-form').style.display = 'none';
 
         // Toggle between login and signup
         document.getElementById('show-login').addEventListener('click', (e) => {
@@ -357,19 +357,6 @@ class WeatherRater {
         document.getElementById('change-user-btn').addEventListener('click', () => {
             if (confirm('Log out? Your data is saved.')) {
                 this.logout();
-            }
-        });
-
-        document.getElementById('toggle-detailed-btn').addEventListener('click', () => {
-            const detailedSection = document.getElementById('detailed-ratings');
-            const toggleBtn = document.getElementById('toggle-detailed-btn');
-
-            if (detailedSection.style.display === 'none') {
-                detailedSection.style.display = 'block';
-                toggleBtn.classList.add('active');
-            } else {
-                detailedSection.style.display = 'none';
-                toggleBtn.classList.remove('active');
             }
         });
 

@@ -14,6 +14,17 @@
             <h1>Weather Rater</h1>
             <p class="subtitle">Track and share your weather ratings with friends</p>
 
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form" style="display: block;">
+                <h2>Welcome Back</h2>
+                <div class="profile-input">
+                    <input type="text" id="login-username" placeholder="Username" maxlength="20">
+                    <input type="password" id="login-password" placeholder="Password">
+                    <button id="login-btn" class="save-btn">Log In</button>
+                </div>
+                <p class="auth-toggle">Don't have an account? <a href="#" id="show-signup">Sign up</a></p>
+            </div>
+
             <!-- Sign Up Form -->
             <div id="signup-form" class="auth-form" style="display: none;">
                 <h2>Create Account</h2>
@@ -23,17 +34,6 @@
                     <button id="signup-btn" class="save-btn">Create Account</button>
                 </div>
                 <p class="auth-toggle">Already have an account? <a href="#" id="show-login">Log in</a></p>
-            </div>
-
-            <!-- Login Form -->
-            <div id="login-form" class="auth-form" style="display: none;">
-                <h2>Welcome Back</h2>
-                <div class="profile-input">
-                    <input type="text" id="login-username" placeholder="Username" maxlength="20">
-                    <input type="password" id="login-password" placeholder="Password">
-                    <button id="login-btn" class="save-btn">Log In</button>
-                </div>
-                <p class="auth-toggle">Don't have an account? <a href="#" id="show-signup">Sign up</a></p>
             </div>
 
             <!-- Incoming Friend Requests Notification -->
@@ -90,84 +90,6 @@
                 <!-- Current Weather Display -->
                 <div id="current-weather" class="current-weather">
                     <div class="weather-loading">Fetching weather data...</div>
-                </div>
-
-                <!-- Detailed Ratings Dropdown -->
-                <div class="detailed-ratings-section">
-                    <button id="toggle-detailed-btn" class="toggle-detailed-btn">
-                        <span>Rate Individual Weather Factors</span>
-                        <span class="arrow">▼</span>
-                    </button>
-
-                    <div id="detailed-ratings" class="detailed-ratings" style="display: none;">
-                        <div class="detailed-rating-item">
-                            <label>Temperature</label>
-                            <select id="rating-temperature" class="rating-select">
-                                <option value="">Rate 1-10</option>
-                                <option value="1">1 - Too Cold/Hot</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5 - Moderate</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10 - Perfect</option>
-                            </select>
-                        </div>
-
-                        <div class="detailed-rating-item">
-                            <label>Humidity</label>
-                            <select id="rating-humidity" class="rating-select">
-                                <option value="">Rate 1-10</option>
-                                <option value="1">1 - Too Humid/Dry</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5 - Moderate</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10 - Perfect</option>
-                            </select>
-                        </div>
-
-                        <div class="detailed-rating-item">
-                            <label>Wind</label>
-                            <select id="rating-wind" class="rating-select">
-                                <option value="">Rate 1-10</option>
-                                <option value="1">1 - Too Windy/Still</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5 - Moderate</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10 - Perfect</option>
-                            </select>
-                        </div>
-
-                        <div class="detailed-rating-item">
-                            <label>Precipitation</label>
-                            <select id="rating-precipitation" class="rating-select">
-                                <option value="">Rate 1-10</option>
-                                <option value="1">1 - Terrible</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5 - Moderate</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10 - Perfect</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Map Section -->

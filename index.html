@@ -49,6 +49,7 @@
                 <h1>Weather Rater</h1>
                 <div class="user-info">
                     <span id="current-user"></span>
+                    <button id="enter-fullscreen-btn" class="enter-fullscreen-btn">🗺️ Map View</button>
                     <button id="change-user-btn" class="change-user-btn">Change User</button>
                 </div>
             </div>
@@ -180,6 +181,38 @@
                             <span class="toggle-text">Share my ratings with friends</span>
                         </label>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fullscreen Map View -->
+        <div id="fullscreen-map-view" class="fullscreen-map-view" style="display: none;">
+            <!-- Minimal Header -->
+            <div class="fullscreen-header">
+                <div class="fullscreen-logo">WeatherRater</div>
+                <div class="fullscreen-controls">
+                    <button id="fullscreen-toggle-btn" class="fullscreen-toggle-btn">
+                        Exit Fullscreen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fullscreen Map -->
+            <div id="fullscreen-map" class="fullscreen-map-container"></div>
+
+            <!-- Bottom Rating Bar -->
+            <div class="fullscreen-rating-bar">
+                <div class="fullscreen-rating-buttons">
+                    <button class="fullscreen-rating-btn" data-rating="1">1</button>
+                    <button class="fullscreen-rating-btn" data-rating="2">2</button>
+                    <button class="fullscreen-rating-btn" data-rating="3">3</button>
+                    <button class="fullscreen-rating-btn" data-rating="4">4</button>
+                    <button class="fullscreen-rating-btn" data-rating="5">5</button>
+                    <button class="fullscreen-rating-btn" data-rating="6">6</button>
+                    <button class="fullscreen-rating-btn" data-rating="7">7</button>
+                    <button class="fullscreen-rating-btn" data-rating="8">8</button>
+                    <button class="fullscreen-rating-btn" data-rating="9">9</button>
+                    <button class="fullscreen-rating-btn" data-rating="10">10</button>
                 </div>
             </div>
         </div>

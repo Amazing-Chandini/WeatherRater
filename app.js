@@ -73,8 +73,10 @@ class WeatherRater {
         this.sentRequests = [];
         this.map = null;
         this.friendsMap = null;
+        this.fullscreenMap = null;
         this.markers = [];
         this.friendsMarkers = [];
+        this.fullscreenMarkers = [];
         this.currentWeather = null;
         this.currentLocation = null;
         this.useFirebase = false;
@@ -82,6 +84,7 @@ class WeatherRater {
         this.currentTab = 'my-ratings';
         this.isAuthenticated = false;
         this.manageFriendsMode = false;
+        this.fullscreenMode = false;
 
         // Rate limiting
         this.lastRatingTime = null;
@@ -407,6 +410,22 @@ class WeatherRater {
                 }
             });
         }
+
+        // Fullscreen mode toggle
+        document.getElementById('enter-fullscreen-btn').addEventListener('click', () => {
+            this.enterFullscreenMode();
+        });
+
+        document.getElementById('fullscreen-toggle-btn').addEventListener('click', () => {
+            this.exitFullscreenMode();
+        });
+
+        // Fullscreen rating buttons
+        document.querySelectorAll('.fullscreen-rating-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                this.handleRating(parseInt(e.target.dataset.rating));
+            });
+        });
     }
 
     setUser(username) {
@@ -588,17 +607,9 @@ class WeatherRater {
     }
 
     async saveRatingWithLocation(overallRating) {
-        const detailedRatings = {
-            temperature: parseInt(document.getElementById('rating-temperature').value) || null,
-            humidity: parseInt(document.getElementById('rating-humidity').value) || null,
-            wind: parseInt(document.getElementById('rating-wind').value) || null,
-            precipitation: parseInt(document.getElementById('rating-precipitation').value) || null
-        };
-
         const ratingData = {
             user: this.currentUser,
             overallRating: overallRating,
-            detailedRatings: detailedRatings,
             weather: this.currentWeather,
             latitude: this.currentLocation.latitude,
             longitude: this.currentLocation.longitude,
@@ -614,24 +625,37 @@ class WeatherRater {
         this.displayStats();
         this.displayRatingHistory();
         this.addMarkerToMap(ratingData);
-        this.highlightButton(overallRating);
 
-        // Reset detailed ratings
-        document.getElementById('rating-temperature').value = '';
-        document.getElementById('rating-humidity').value = '';
-        document.getElementById('rating-wind').value = '';
-        document.getElementById('rating-precipitation').value = '';
+        // Add to fullscreen map if in fullscreen mode
+        if (this.fullscreenMode && this.fullscreenMap) {
+            this.addMarkerToFullscreenMap(ratingData);
+        }
+
+        this.highlightButton(overallRating);
     }
 
     highlightButton(rating) {
+        // Highlight regular buttons
         const buttons = document.querySelectorAll('.rating-btn');
         buttons.forEach(btn => btn.classList.remove('selected'));
 
-        const selectedBtn = document.querySelector(`[data-rating="${rating}"]`);
+        const selectedBtn = document.querySelector('.rating-btn[data-rating="' + rating + '"]');
         if (selectedBtn) {
             selectedBtn.classList.add('selected');
             setTimeout(() => {
                 selectedBtn.classList.remove('selected');
+            }, 2000);
+        }
+
+        // Highlight fullscreen buttons
+        const fullscreenButtons = document.querySelectorAll('.fullscreen-rating-btn');
+        fullscreenButtons.forEach(btn => btn.classList.remove('selected'));
+
+        const selectedFullscreenBtn = document.querySelector('.fullscreen-rating-btn[data-rating="' + rating + '"]');
+        if (selectedFullscreenBtn) {
+            selectedFullscreenBtn.classList.add('selected');
+            setTimeout(() => {
+                selectedFullscreenBtn.classList.remove('selected');
             }, 2000);
         }
     }
@@ -1393,6 +1417,141 @@ class WeatherRater {
 
         const message = this.manageFriendsMode ? 'Manage mode enabled' : 'Manage mode disabled';
         this.showMessage(message, 'info');
+    }
+
+    enterFullscreenMode() {
+        this.fullscreenMode = true;
+
+        // Hide main app
+        document.getElementById('main-app').style.display = 'none';
+
+        // Show fullscreen view
+        document.getElementById('fullscreen-map-view').style.display = 'block';
+
+        // Initialize fullscreen map if not already done
+        if (!this.fullscreenMap) {
+            this.initFullscreenMap();
+        } else {
+            // Force map to recalculate size
+            setTimeout(() => {
+                this.fullscreenMap.invalidateSize();
+            }, 100);
+        }
+
+        // Display current ratings on fullscreen map
+        this.displayRatingsOnFullscreenMap();
+    }
+
+    exitFullscreenMode() {
+        this.fullscreenMode = false;
+
+        // Hide fullscreen view
+        document.getElementById('fullscreen-map-view').style.display = 'none';
+
+        // Show main app
+        document.getElementById('main-app').style.display = 'block';
+
+        // Force main map to recalculate size
+        setTimeout(() => {
+            if (this.map) {
+                this.map.invalidateSize();
+            }
+        }, 100);
+    }
+
+    initFullscreenMap() {
+        const mapEl = document.getElementById('fullscreen-map');
+        if (!mapEl) return;
+
+        this.fullscreenMap = L.map('fullscreen-map').setView([20, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        }).addTo(this.fullscreenMap);
+
+        // Fit to ratings if available
+        if (this.ratings.length > 0) {
+            const bounds = L.latLngBounds(
+                this.ratings.map(r => [r.latitude, r.longitude])
+            );
+            this.fullscreenMap.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
+
+    displayRatingsOnFullscreenMap() {
+        if (!this.fullscreenMap) return;
+
+        // Clear existing markers
+        this.fullscreenMarkers.forEach(marker => marker.remove());
+        this.fullscreenMarkers = [];
+
+        // Add markers for each rating
+        this.ratings.forEach((ratingData) => {
+            this.addMarkerToFullscreenMap(ratingData);
+        });
+
+        // Fit map to show all markers
+        if (this.ratings.length > 0) {
+            const bounds = L.latLngBounds(
+                this.ratings.map(r => [r.latitude, r.longitude])
+            );
+            this.fullscreenMap.fitBounds(bounds, { padding: [100, 100] });
+        }
+    }
+
+    addMarkerToFullscreenMap(ratingData) {
+        const { overallRating, latitude, longitude, timestamp, weather } = ratingData;
+
+        const iconColor = this.getRatingColor(overallRating);
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="
+                background: ${iconColor};
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 16px;
+            ">${overallRating}</div>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        const marker = L.marker([latitude, longitude], { icon: customIcon })
+            .addTo(this.fullscreenMap);
+
+        const date = new Date(timestamp);
+
+        let weatherInfo = '';
+        if (weather) {
+            weatherInfo = `
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #ddd;">
+                    <small>
+                        🌡️ ${weather.temperature}°F | 💧 ${weather.humidity}% |
+                        💨 ${weather.wind} mph<br>
+                        ☔ ${weather.precipitation}" | 🌫️ ${weather.dewPoint}°F |
+                        ⏰ ${weather.timeOfDay}
+                    </small>
+                </div>
+            `;
+        }
+
+        marker.bindPopup(`
+            <div style="text-align: center; min-width: 180px;">
+                <strong style="font-size: 18px;">Overall: ${overallRating}/10</strong><br>
+                <span style="color: #666; font-size: 12px;">${date.toLocaleString()}</span>
+                ${weatherInfo}
+            </div>
+        `);
+
+        this.fullscreenMarkers.push(marker);
     }
 
     async loadSelectedFriendRatings(friendName) {
